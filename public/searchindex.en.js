@@ -8,14 +8,6 @@ var relearn_searchindex = [
     "uri": "/categories/index.html"
   },
   {
-    "breadcrumb": "",
-    "content": "",
-    "description": "",
-    "tags": [],
-    "title": "My New Hugo Site",
-    "uri": "/index.html"
-  },
-  {
     "breadcrumb": "My New Hugo Site",
     "content": "",
     "description": "",

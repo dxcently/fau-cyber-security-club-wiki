@@ -3,7 +3,7 @@
   <channel>
     <title>My New Hugo Site</title>
     <link>http://localhost:1313/index.html</link>
-    <description></description>
+    <description>This is your new home page.</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
