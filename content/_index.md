@@ -1,6 +1,8 @@
 +++
-title = ""
+title = "FAU Cyber Security Club"
 type = "home"
 +++
 
-This is your new home page.
+---
+
+##### Welcome to the FAU Cyber Security Club Wiki!

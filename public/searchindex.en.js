@@ -1,14 +1,6 @@
 var relearn_searchindex = [
   {
-    "breadcrumb": "My New Hugo Site",
-    "content": "This is a new chapter.",
-    "description": "This is a new chapter.",
-    "tags": [],
-    "title": "Log",
-    "uri": "/log/index.html"
-  },
-  {
-    "breadcrumb": "My New Hugo Site",
+    "breadcrumb": "FAU Cyber Security Club",
     "content": "",
     "description": "",
     "tags": [],
@@ -16,19 +8,19 @@ var relearn_searchindex = [
     "uri": "/categories/index.html"
   },
   {
-    "breadcrumb": "My New Hugo Site",
+    "breadcrumb": "",
+    "content": "Welcome to the FAU Cyber Security Club Wiki!",
+    "description": "Welcome to the FAU Cyber Security Club Wiki!",
+    "tags": [],
+    "title": "FAU Cyber Security Club",
+    "uri": "/index.html"
+  },
+  {
+    "breadcrumb": "FAU Cyber Security Club",
     "content": "",
     "description": "",
     "tags": [],
     "title": "Tags",
     "uri": "/tags/index.html"
-  },
-  {
-    "breadcrumb": "My New Hugo Site \u003e Log",
-    "content": "This is a new page.",
-    "description": "This is a new page.",
-    "tags": [],
-    "title": "Test",
-    "uri": "/log/test/index.html"
   }
 ]
