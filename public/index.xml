@@ -3,7 +3,7 @@
   <channel>
     <title>FAU Cyber Security Club</title>
     <link>http://localhost:1313/index.html</link>
-    <description>Welcome to the FAU Cyber Security Club Wiki!</description>
+    <description>Welcome to the FAU Cyber Security Club Wiki! resources im using:&#xA;hugo docs&#xA;hugo relearn theme docs&#xA;md cheetsheet</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
