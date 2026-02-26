@@ -1,12 +1,33 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://localhost:1313/introduction/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/test2/index.html</loc>
+  </url>
+  <url>
     <loc>http://localhost:1313/categories/index.html</loc>
   </url>
   <url>
     <loc>http://localhost:1313/index.html</loc>
   </url>
   <url>
+    <loc>http://localhost:1313/introduction/first-test/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/resources/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/introduction/second-test/index.html</loc>
+  </url>
+  <url>
     <loc>http://localhost:1313/tags/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/test3/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</loc>
   </url>
 </urlset>

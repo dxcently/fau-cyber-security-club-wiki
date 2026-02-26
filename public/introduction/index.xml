@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Introduction :: FAU Cyber Security Club</title>
+    <link>http://localhost:1313/introduction/index.html</link>
+    <description>This is a new chapter.</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:1313/introduction/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Introduction to the Club</title>
+      <link>http://localhost:1313/introduction/introduction-to-the-club/index.html</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/introduction/introduction-to-the-club/index.html</guid>
+      <description>👋 Welcome to the FAU Cyber Security Club Wiki! This is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.&#xA;The main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.</description>
+    </item>
+    <item>
+      <title>🛡️ Cybersecurity Intern Training Resource Guide (2025)</title>
+      <link>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</guid>
+      <description>A curated, difficulty‑based roadmap for building Linux, Windows, cybersecurity, cloud, web, and competition skills.&#xA;🌱 Starting Level (Beginner‑Friendly) Perfect for interns new to Linux, Windows, or cybersecurity fundamentals.&#xA;🐧 Linux Basics Linux Journey — Free Linux basics, theory, and commands&#xA;https://linuxjourney.com OverTheWire: Bandit — Beginner‑friendly CTF that teaches Linux hands‑on&#xA;https://overthewire.org/wargames/bandit/ How to connect? Command Prompt or Powershell foo@bar:~$ ssh bandit0@bandit.labs.overthewire.org -p 2220 # password: bandit0 Linux S24 Slides https://ubnetdef.org/slides/spring2024/LinuxS24.pdf</description>
+    </item>
+  </channel>
+</rss>
