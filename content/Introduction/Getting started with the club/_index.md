@@ -1,7 +1,6 @@
 +++
 title = "Getting Started With the Club"
-weight = 2
+weight = 1
 +++
 
-This is a new chapter.
-
+---

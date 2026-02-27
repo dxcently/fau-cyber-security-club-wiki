@@ -8,18 +8,11 @@
     <language>en-us</language>
     <atom:link href="http://localhost:1313/introduction/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>What Is Cyber Security</title>
-      <link>http://localhost:1313/introduction/what-is-cyber-security/index.html</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/introduction/what-is-cyber-security/index.html</guid>
-      <description>This is a new chapter.</description>
-    </item>
-    <item>
       <title>Getting Started With the Club</title>
       <link>http://localhost:1313/introduction/getting-started-with-the-club/index.html</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/introduction/getting-started-with-the-club/index.html</guid>
-      <description>This is a new chapter.</description>
+      <description></description>
     </item>
   </channel>
 </rss>

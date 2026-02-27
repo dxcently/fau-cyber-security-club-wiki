@@ -28,7 +28,6 @@ spirit of playful cleverness. Activities that display playful cleverness have
 
 ### Some things we reccommend you checking out:
 
-- What is cyber security
 - Getting Started with the club
 - Window systems
 - Introduction to Linux
