@@ -1,19 +1,27 @@
 var relearn_searchindex = [
   {
     "breadcrumb": "FAU Cyber Security Club",
-    "content": "This is a new chapter.",
-    "description": "This is a new chapter.",
+    "content": "This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.\nThe main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.\nWe strongly encourage an open environment of learning, so NEVER be afraid to ask questions. It is ok if you don’t know something, remember that we are all learning. And the best way to learn is to fail!\nIt is hard to write a simple definition of something as varied as hacking, but I think what these activities have in common is playfulness, cleverness, and exploration. Thus, hacking means exploring the limits of what is possible, in a spirit of playful cleverness. Activities that display playful cleverness have “hack value.” - Richard Stallman\nSome things we reccommend you checking out: What is cyber security Getting Started with the club Window systems Introduction to Linux",
+    "description": "This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.\nThe main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.",
     "tags": [],
     "title": "Introduction",
     "uri": "/introduction/index.html"
   },
   {
-    "breadcrumb": "FAU Cyber Security Club",
+    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
     "content": "This is a new chapter.",
     "description": "This is a new chapter.",
     "tags": [],
-    "title": "Test2",
-    "uri": "/test2/index.html"
+    "title": "What Is Cyber Security",
+    "uri": "/introduction/what-is-cyber-security/index.html"
+  },
+  {
+    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
+    "content": "This is a new chapter.",
+    "description": "This is a new chapter.",
+    "tags": [],
+    "title": "Getting Started With the Club",
+    "uri": "/introduction/getting-started-with-the-club/index.html"
   },
   {
     "breadcrumb": "FAU Cyber Security Club",
@@ -25,19 +33,11 @@ var relearn_searchindex = [
   },
   {
     "breadcrumb": "",
-    "content": "Welcome to the FAU Cyber Security Club Wiki! resources im using:\nhugo docs\nhugo relearn theme docs\nmd cheetsheet",
-    "description": "Welcome to the FAU Cyber Security Club Wiki! resources im using:\nhugo docs\nhugo relearn theme docs\nmd cheetsheet",
+    "content": "👋 Welcome to the FAU Cyber Security Club Wiki! This wiki is currently underconstruction. If you would like to help me with it, contact me @solitude_freak or @shaamad on the Discord.\nResources im using:\nhugo docs\nhugo relearn theme docs\nmd cheetsheet",
+    "description": "👋 Welcome to the FAU Cyber Security Club Wiki! This wiki is currently underconstruction. If you would like to help me with it, contact me @solitude_freak or @shaamad on the Discord.\nResources im using:\nhugo docs\nhugo relearn theme docs\nmd cheetsheet",
     "tags": [],
     "title": "FAU Cyber Security Club",
     "uri": "/index.html"
-  },
-  {
-    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
-    "content": "This is a new page.",
-    "description": "This is a new page.",
-    "tags": [],
-    "title": "First Test",
-    "uri": "/introduction/first-test/index.html"
   },
   {
     "breadcrumb": "FAU Cyber Security Club",
@@ -48,14 +48,6 @@ var relearn_searchindex = [
     "uri": "/resources/index.html"
   },
   {
-    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
-    "content": "This is a new page.",
-    "description": "This is a new page.",
-    "tags": [],
-    "title": "Second Test",
-    "uri": "/introduction/second-test/index.html"
-  },
-  {
     "breadcrumb": "FAU Cyber Security Club",
     "content": "",
     "description": "",
@@ -64,19 +56,11 @@ var relearn_searchindex = [
     "uri": "/tags/index.html"
   },
   {
-    "breadcrumb": "FAU Cyber Security Club",
-    "content": "This is a new page.",
-    "description": "This is a new page.",
-    "tags": [],
-    "title": "Test3",
-    "uri": "/test3/index.html"
-  },
-  {
-    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
+    "breadcrumb": "FAU Cyber Security Club \u003e Resources",
     "content": "A curated, difficulty‑based roadmap for building Linux, Windows, cybersecurity, cloud, web, and competition skills.\n🌱 Starting Level (Beginner‑Friendly) Perfect for interns new to Linux, Windows, or cybersecurity fundamentals.\n🐧 Linux Basics Linux Journey — Free Linux basics, theory, and commands\nhttps://linuxjourney.com OverTheWire: Bandit — Beginner‑friendly CTF that teaches Linux hands‑on\nhttps://overthewire.org/wargames/bandit/ How to connect? Command Prompt or Powershell foo@bar:~$ ssh bandit0@bandit.labs.overthewire.org -p 2220 # password: bandit0 Linux S24 Slides https://ubnetdef.org/slides/spring2024/LinuxS24.pdf\nIntro to Bash (CyberPatriot Guide) https://cypat.guide/docs/linux/linux_fundamentals/intro_bash\nPractice Linux Systems - JSLinux (Online Fedora VM) https://bellard.org/jslinux/vm.html?cpu=riscv64\u0026url=fedora33-riscv.cfg\u0026mem=256 Online fedora Linux machine to use for practice.\n🪟 PowerShell / Windows Basics Intro to PowerShell (CyberPatriot Guide) https://cypat.guide/docs/windows/scripting/introduction_powershell\nUnderTheWire — PowerShell‑focused wargame\nunderthewire-react How to connect? Use Command Prompt or Powershell\nfoo@bar:~$ ssh century1@century.underthewire.tech # password: century1 Windows Basics Slide Deck https://ubnetdef.org/slides/spring2024/Windows.pdf 🎯 Beginner CTFs / Cyber PicoCTF — The best cyber/CTF platform for beginners\nhttps://play.picoctf.org/ CTF101 — Intro to CTF concepts\nhttps://ctf101.org/ MetaCTF - Beginner to Advanced CTFs https://metactf.com/ 🎥 NCAE Cyber Games YouTube Channel (Beginner Competition Training) NCAE Cyber Games YouTube A beginner‑focused cybersecurity competition channel with excellent hands‑on demos for Linux defense, detection, red teaming basics, and general cyber competition fundamentals. Great for visual learners and those preparing for beginner CTFs or cyber games.\nhttps://www.youtube.com/@ncaecybergames\n🧪 Beginner Labs TryHackMe (Beginner Rooms — Linux + Windows)\nMain beginner labs: https://tryhackme.com/hacktivities Start with: Pre-Security Path Threat Hunting Simulator: https://tryhackme.com/threat-hunting-sim/scenarios SOC Simulator: https://tryhackme.com/soc-sim [TryHackMe | SOC Simulator (https://tryhackme.com/soc-sim) NCAE MiniHack 2025 Sandbox Challenges This is a great lab to learn networking, how a scoring engine works, and some CTF practice.\\\nhttps://ui.sandbox.ncaecybergames.org/challenges Walkthrough playlist:\nhttps://youtu.be/gu5A2yCITRs?list=PLqux0fXsj7x3WYm6ZWuJnGC1rXQZ1018M Hack the Box Starting Point Great Beginner hacking labs for new people https://app.hackthebox.com/starting-point\nSplunk Boss of the SOC (BOTS) — Splunk CTF\nA hands‑on Capture‑the‑Flag style platform that teaches you how to use SIEM tools, log analysis, threat hunting, and detection engineering using\nSplunk. Perfect for learning real SOC workflows in a gamified way.\nhttps://bots.splunk.com/login?redirect=/ 🛡️ CyberPatriot Practice Practice Images (Linux/Windows Administration)\nExcellent hands‑on experience for real system administration tasks.\nhttps://docs.google.com/spreadsheets/d/1cdVHtk4w5JDJCYy-EO2_ycr0ZqMgUyjFOVDn5Y8eGVw/edit\nVMware Workstation/Fusion Archives (required to run practice images):\nWorkstation 17.x (Windows/Linux): https://dn710001.ca.archive.org/0/items/vmwareworkstationarchive/17.x/ Fusion 13.x (Mac): https://dn710001.ca.archive.org/0/items/vmwareworkstationarchive/Fusion/13.x/ Guide for the CyberPatriot Practice Images\nExcellent walkthrough and hardening guide for images.\nhttps://cypat.guide/\n🔧 Some Knowledge (Intermediate‑Level) For interns who know basic Linux/Windows and want to build deeper skills.\n🐧 Linux \u0026 Systems pwn.college — Linux Luminarium (Penguin Track)\nhttps://pwn.college/linux-luminarium/ SadServers — Linux, Docker, Kubernetes troubleshooting challenges\nhttps://sadservers.com/ LabEx — Linux, DevOps, and cybersecurity labs\nhttps://labex.io/learn 🗂️ Windows / AD / Services AD + Linux Lab Setup Guide\nLearn how to deploy SSH, NGINX, AD, and more.\nhttps://adaptable-april-ff0.notion.site/actually-doing-evan-s-lab-a44ac1a906a74b5abd0b72062454da6c 🏁 Competition Resources Plinko Horse Resources\nhttps://plinko.horse/resources\nCal Poly Cyber Bootcamp (They do this every summer for free)\nhttps://cysec.team/bootcamps/2025/meeting-1/ Cal Poly Swift Discord\n📚 General Cyber Learning O’Reilly Learning Library\nCourses for Sec+, CCNA, RHCSA, and more (Free access for FAU Students).\nhttps://learning.oreilly.com/home/\nSecurity+ Free Practice Quizzes\nhttps://secquizmaster.pythonanywhere.com/sec\n☁️ Cloud Training Free Cloud training platform that covers Terraform, Kubernetes, and CI/CD:\nhttps://ca-ltc-api-dev.whiteocean-ee25ad60.centralus.azurecontainerapps.io/ https://youtu.be/2cMkpLoKUj0 (Cybersecurity Cloud Homelab using Terraform, Splunk, Nessus) 🔐 Cryptography Intro to Cryptography Document\nhttps://docs.google.com/document/d/1ZMPkTr0VUheMkFEWWmsVwzoTw4zdtoizqsmB2woDAs0/edit?usp=sharing 🧠 Confident (Advanced / Competition Ready) For learners ready to specialize in exploitation, web security, blue team, or lab automation.\n⚙️ Exploit Development \u0026 Advanced Linux pwn.college — Full Platform\nLinux, exploitation, CTF prep, and advanced training.\nhttps://pwn.college/ 🌐 Web Security PortSwigger Web Security Academy\nIndustry‑leading web exploitation training.\nhttps://portswigger.net/web-security\nWeb Exploitation YouTube Playlist\nhttps://youtube.com/playlist?list=PLJnLaWkc9xRitBGPK5CcyoWCcPCeTYoqw\n🛡️ Blue/Red Team Platforms Hack The Box (Intermediate → Advanced labs)\nhttps://hackthebox.com/ 🧱 Advanced Practice Environments WRCCDC Proxmox Server Setup (Club Documentation)\nDocumentation on how i set up my proxmox server and how to set up your own practice environment.\nArchived environments from past competitions. 🤖 Automation \u0026 Infrastructure Ludus Cloud — Automates AD/blue team labs with Ansible\nhttps://docs.ludus.cloud/ 🧰 Competition / Hardening Scripts CCDC Scripts (Club GitHub Repo)\nhttps://github.com/caol777/CCDC-scripts/tree/main 🎓 Advanced Technical Content DefSecClub (Dakota State University)\nDeep‑dive Linux/Windows security and competition prep.\nhttps://www.youtube.com/@DefSecClub 📌 Quick Links TryHackMe Beginner Hub — https://tryhackme.com/hacktivities Bandit Linux Practice — https://overthewire.org/wargames/bandit/ Practice Images Guide - cypat.guide | CyberPatriot Community Guide PortSwigger Web Academy — https://portswigger.net/web-security Proxmox WRCCDC Setup — https://github.com/caol777/Club-proxmox-server https://archive.wrccdc.org/images/2026/ pwn.college — https://pwn.college/ NCAE Cyber Games YouTube — https://www.youtube.com/@ncaecybergames Bitburner (Hacking \u0026 Scripting Video Game) — https://store.steampowered.com/app/1812820/Bitburner/ Python Zero to Hero Course https://www.youtube.com/watch?v=t8pPdKYpowI 🎥 YouTube Learning Resources (All Levels) A curated list of highly recommended YouTube channels that teach cybersecurity, IT, DevOps, malware analysis, low‑level programming, and government technology career pathways. 🏛️ Government / Public Sector IT \u0026 Cyber Symone B Gov‑tech YouTuber who explains how to enter government roles in IT, cybersecurity, and federal contracting. Great for students seeking public‑sector cyber careers.\nhttps://www.youtube.com/@symonebeez/videos\n🚀 DevOps, Cloud, Containers, \u0026 Automation TechWorld With Nana One of the best DevOps creators with beginner‑friendly and visual explanations of Kubernetes, Docker, CI/CD, GitOps, and more.\nCourses include: Kubernetes, Docker, Python Zero to Hero, and more.\nhttps://www.youtube.com/@TechWorldwithNana\nPython Zero to Hero: https://www.youtube.com/watch?v=t8pPdKYpowI\n📚 Certification Training (CompTIA A+ / Net+ / Sec+) Professor Messer The gold standard for free CompTIA training videos. Use his playlists with practice quizzes to help prepare for the A+, Network+, and Security+ exams.\nhttps://www.youtube.com/@professormesser\n🧠 Low‑Level Programming \u0026 Software Security Low Level TV Deep dives into low‑level systems, embedded security, memory safety, firmware hacking, and reverse engineering concepts. Amazing for developing a strong technical foundation.\nhttps://www.youtube.com/@LowLevelTV\n🔥 Practical Cybersecurity, CTFs, Malware \u0026 Tools John Hammond One of the most respected cybersecurity creators. Covers CTF walkthroughs, TryHackMe rooms, Hack The Box, malware analysis, PowerShell, AD, Bash, Python, and real-world cyber concepts.\nExcellent for beginners and intermediate learners.\nhttps://www.youtube.com/@_JohnHammond\nEric Parker Specializes in reverse engineering and malware analysis. Great for blue‑teamers and those exploring malware internals and RE tooling.\nhttps://www.youtube.com/@EricParker\n🌐 General IT, Cyber, Networking, and Career Advice NetworkChuck Massive channel covering IT careers, networking, Linux basics, cybersecurity, cloud, Python, and more — highly energetic and beginner‑friendly.\nhttps://www.youtube.com/@NetworkChuck/videos\n🗡️ Penetration Testing \u0026 Ethical Hacking Tyler Ramsbey Amazing penetration testing content, including hands-on demos, custom labs, and walkthroughs.\nhttps://www.youtube.com/@TylerRamsbey/videos\nGnarCoding A funny and engaging ethical hacking creator who makes complex topics enjoyable and accessible. Great for beginners.\nhttps://www.youtube.com/@GnarCoding",
     "description": "A curated, difficulty‑based roadmap for building Linux, Windows, cybersecurity, cloud, web, and competition skills.\n🌱 Starting Level (Beginner‑Friendly) Perfect for interns new to Linux, Windows, or cybersecurity fundamentals.\n🐧 Linux Basics Linux Journey — Free Linux basics, theory, and commands\nhttps://linuxjourney.com OverTheWire: Bandit — Beginner‑friendly CTF that teaches Linux hands‑on\nhttps://overthewire.org/wargames/bandit/ How to connect? Command Prompt or Powershell foo@bar:~$ ssh bandit0@bandit.labs.overthewire.org -p 2220 # password: bandit0 Linux S24 Slides https://ubnetdef.org/slides/spring2024/LinuxS24.pdf",
     "tags": [],
     "title": "🛡️ Cybersecurity Intern Training Resource Guide (2025)",
-    "uri": "/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html"
+    "uri": "/resources/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html"
   }
 ]

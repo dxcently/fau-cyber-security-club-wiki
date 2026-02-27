@@ -4,6 +4,12 @@
     <loc>http://localhost:1313/introduction/index.html</loc>
   </url>
   <url>
+    <loc>http://localhost:1313/introduction/what-is-cyber-security/index.html</loc>
+  </url>
+  <url>
+    <loc>http://localhost:1313/introduction/getting-started-with-the-club/index.html</loc>
+  </url>
+  <url>
     <loc>http://localhost:1313/categories/index.html</loc>
   </url>
   <url>
@@ -16,6 +22,6 @@
     <loc>http://localhost:1313/tags/index.html</loc>
   </url>
   <url>
-    <loc>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</loc>
+    <loc>http://localhost:1313/resources/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</loc>
   </url>
 </urlset>

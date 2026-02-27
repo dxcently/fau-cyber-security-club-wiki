@@ -8,11 +8,18 @@
     <language>en-us</language>
     <atom:link href="http://localhost:1313/introduction/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>🛡️ Cybersecurity Intern Training Resource Guide (2025)</title>
-      <link>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</link>
+      <title>What Is Cyber Security</title>
+      <link>http://localhost:1313/introduction/what-is-cyber-security/index.html</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/introduction/%EF%B8%8F-cybersecurity-intern-training-r-2/index.html</guid>
-      <description>A curated, difficulty‑based roadmap for building Linux, Windows, cybersecurity, cloud, web, and competition skills.&#xA;🌱 Starting Level (Beginner‑Friendly) Perfect for interns new to Linux, Windows, or cybersecurity fundamentals.&#xA;🐧 Linux Basics Linux Journey — Free Linux basics, theory, and commands&#xA;https://linuxjourney.com OverTheWire: Bandit — Beginner‑friendly CTF that teaches Linux hands‑on&#xA;https://overthewire.org/wargames/bandit/ How to connect? Command Prompt or Powershell foo@bar:~$ ssh bandit0@bandit.labs.overthewire.org -p 2220 # password: bandit0 Linux S24 Slides https://ubnetdef.org/slides/spring2024/LinuxS24.pdf</description>
+      <guid>http://localhost:1313/introduction/what-is-cyber-security/index.html</guid>
+      <description>This is a new chapter.</description>
+    </item>
+    <item>
+      <title>Getting Started With the Club</title>
+      <link>http://localhost:1313/introduction/getting-started-with-the-club/index.html</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/introduction/getting-started-with-the-club/index.html</guid>
+      <description>This is a new chapter.</description>
     </item>
   </channel>
 </rss>
