@@ -6,10 +6,8 @@ weight = 1
 
 ---
 
-### 👋 Welcome to the FAU Cyber Security Club Wiki!
-
-This is where you can find quick information about the club and current events,
-as well as helpful resources and guides to help you get initalized.
+This Wiki is where you can find quick information about the club and current
+events, as well as helpful resources and guides to help you get initalized.
 
 The main goal of this club is to create a fun and engaging environment to help
 students engage not only in learning more about cyber security and tech, but
@@ -20,7 +18,7 @@ community and connections.
 
 We strongly encourage an open environment of learning, so _NEVER_ be afraid to
 ask questions. It is ok if you don't know something, remember that we are all
-learning! The best way to learn is to fail.
+learning. And the best way to learn is to fail!
 
 _It is hard to write a simple definition of something as varied as hacking, but
 I think what these activities have in common is playfulness, cleverness, and

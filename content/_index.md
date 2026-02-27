@@ -5,9 +5,13 @@ type = "home"
 
 ---
 
-##### Welcome to the FAU Cyber Security Club Wiki!
+#### 👋 Welcome to the FAU Cyber Security Club Wiki!
 
-resources im using:
+This wiki is currently underconstruction. If you would like to help me with it,
+contact me @solitude_freak or @shaamad on the
+[Discord](https://discord.gg/7beJgGF9tK).
+
+Resources im using:
 
 [hugo docs](https://gohugo.io/documentation/)
 
