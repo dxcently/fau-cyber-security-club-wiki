@@ -3,7 +3,7 @@
   <channel>
     <title>Introduction :: FAU Cyber Security Club</title>
     <link>http://localhost:1313/introduction/index.html</link>
-    <description>This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.&#xA;The main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.</description>
+    <description>This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.&#xA;We strongly encourage an open environment of learning, so NEVER be afraid to ask questions. It is ok if you don’t know something, remember that we are all learning. And the best way to learn is to fail!</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <atom:link href="http://localhost:1313/introduction/index.xml" rel="self" type="application/rss+xml" />
@@ -12,7 +12,7 @@
       <link>http://localhost:1313/introduction/getting-started-with-the-club/index.html</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/introduction/getting-started-with-the-club/index.html</guid>
-      <description></description>
+      <description>Welcome to the FAU Cyber Security Club!&#xA;We are so glad to have you here and taking the time to sit down to read this! For those who are looking into or is already interested in all things cyber security. This is the place for you!&#xA;The main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.</description>
     </item>
   </channel>
 </rss>

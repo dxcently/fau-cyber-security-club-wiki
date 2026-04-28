@@ -3,7 +3,7 @@
   <channel>
     <title>Links :: FAU Cyber Security Club</title>
     <link>http://localhost:1313/links/index.html</link>
-    <description>USEFUL LINKS https://github.com/Berkanktk/CyberSecurity?tab=readme-ov-file#links ACTIVE CLUB REPOS ARCHIVED CLUB REPOS 2026 eMERGE Project Scalpel Hackathon - Cowrie Honeypot with Hybrid Edge AI&#xA;https://github.com/RohanDS2024/Emirge https://github.com/caol777/CCDC-scripts https://github.com/caol777/Cowrie-honeypot</description>
+    <description>USEFUL LINKS Guide on all things Cyber&#xA;https://github.com/Berkanktk/CyberSecurity?tab=readme-ov-file#links ACTIVE CLUB REPOS Repo for this wiki&#xA;https://github.com/dxcently/fau-cyber-security-club-wiki ARCHIVED CLUB REPOS 2026 eMERGE Project Scalpel Hackathon - Cowrie Honeypot with Hybrid Edge AI</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <atom:link href="http://localhost:1313/links/index.xml" rel="self" type="application/rss+xml" />
