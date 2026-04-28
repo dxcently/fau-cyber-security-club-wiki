@@ -1,27 +1,27 @@
 var relearn_searchindex = [
   {
+    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
+    "content": "",
+    "description": "",
+    "tags": [],
+    "title": "Getting Started With the Club",
+    "uri": "/introduction/getting-started-with-the-club/index.html"
+  },
+  {
     "breadcrumb": "FAU Cyber Security Club",
-    "content": "This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.\nThe main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.\nWe strongly encourage an open environment of learning, so NEVER be afraid to ask questions. It is ok if you don’t know something, remember that we are all learning. And the best way to learn is to fail!\nIt is hard to write a simple definition of something as varied as hacking, but I think what these activities have in common is playfulness, cleverness, and exploration. Thus, hacking means exploring the limits of what is possible, in a spirit of playful cleverness. Activities that display playful cleverness have “hack value.” - Richard Stallman\nSome things we reccommend you checking out: What is cyber security Getting Started with the club Window systems Introduction to Linux",
+    "content": "This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.\nThe main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.\nWe strongly encourage an open environment of learning, so NEVER be afraid to ask questions. It is ok if you don’t know something, remember that we are all learning. And the best way to learn is to fail!\nIt is hard to write a simple definition of something as varied as hacking, but I think what these activities have in common is playfulness, cleverness, and exploration. Thus, hacking means exploring the limits of what is possible, in a spirit of playful cleverness. Activities that display playful cleverness have “hack value.” - Richard Stallman\nSome things we reccommend you checking out: Getting Started with the club Window systems Introduction to Linux",
     "description": "This Wiki is where you can find quick information about the club and current events, as well as helpful resources and guides to help you get initalized.\nThe main goal of this club is to create a fun and engaging environment to help students engage not only in learning more about cyber security and tech, but also to create a space of driven and passsionate people who are looking for community and connections.",
     "tags": [],
     "title": "Introduction",
     "uri": "/introduction/index.html"
   },
   {
-    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
-    "content": "This is a new chapter.",
-    "description": "This is a new chapter.",
+    "breadcrumb": "FAU Cyber Security Club",
+    "content": "",
+    "description": "",
     "tags": [],
-    "title": "What Is Cyber Security",
-    "uri": "/introduction/what-is-cyber-security/index.html"
-  },
-  {
-    "breadcrumb": "FAU Cyber Security Club \u003e Introduction",
-    "content": "This is a new chapter.",
-    "description": "This is a new chapter.",
-    "tags": [],
-    "title": "Getting Started With the Club",
-    "uri": "/introduction/getting-started-with-the-club/index.html"
+    "title": "Windows Systems",
+    "uri": "/windows-systems/index.html"
   },
   {
     "breadcrumb": "FAU Cyber Security Club",
