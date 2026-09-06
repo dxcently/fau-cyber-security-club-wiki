@@ -2,6 +2,7 @@ import io
 import json
 import sys
 import unittest
+import urllib.parse
 from contextlib import redirect_stderr
 from datetime import datetime
 
@@ -498,6 +499,153 @@ class TestNotifyOfficerChannel(unittest.TestCase):
         with redirect_stderr(stderr):
             notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
         self.assertIn("officer channel", stderr.getvalue())
+
+
+OFFICER_ROLE = "111222333444555666"
+
+
+class ReactionApi:
+    """Stands in for `api()` when testing DISCORD_OFFICER_ROLE_IDS gating.
+
+    Same jobs-channel shape as FakeApi, plus the two endpoints the gated path
+    adds: a message's reactors for one marker, and a guild member's roles.
+    `reactors` maps (message_id, emoji) -> [user_id, ...]; a pair with no
+    entry means nobody reacted with that marker. `members` maps user_id ->
+    [role_id, ...]; a user_id with no entry means the member lookup 404s.
+    `fail_reactors=True` makes every reactors fetch raise, to exercise the
+    "reactors fetch failed" fallback.
+    """
+
+    def __init__(self, jobs_messages=(), reactors=None, members=None, fail_reactors=False):
+        self.jobs_messages = list(jobs_messages)
+        self.reactors = reactors or {}
+        self.members = members or {}
+        self.fail_reactors = fail_reactors
+        self.reactor_calls = []
+        self.member_calls = []
+
+    def __call__(self, path, data=None):
+        if path == f"/channels/{CHANNEL}":
+            return {"guild_id": GUILD}
+        if path.startswith(f"/channels/{CHANNEL}/messages/") and "/reactions/" in path:
+            message_id, _, emoji_enc = path.removeprefix(f"/channels/{CHANNEL}/messages/").partition("/reactions/")
+            self.reactor_calls.append((message_id, emoji_enc))
+            if self.fail_reactors:
+                raise RuntimeError("boom reactors")
+            emoji = urllib.parse.unquote(emoji_enc)
+            user_ids = self.reactors.get((message_id, emoji), [])
+            return [{"id": uid, "username": f"user{uid}"} for uid in user_ids]
+        if path.startswith(f"/channels/{CHANNEL}/messages"):
+            return self.jobs_messages
+        if path.startswith(f"/guilds/{GUILD}/members/"):
+            user_id = path.rsplit("/", 1)[1]
+            self.member_calls.append(user_id)
+            if user_id not in self.members:
+                raise RuntimeError("404 Not Found")
+            return {"user": {"id": user_id}, "roles": self.members[user_id]}
+        raise AssertionError(f"unexpected path {path!r}")
+
+
+class TestBuildItemsOfficerRoleGating(unittest.TestCase):
+    def test_env_unset_any_reactor_publishes(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE)])
+        api = ReactionApi(jobs_messages=[m])
+        items = build_items(CHANNEL, "", api)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(api.reactor_calls, [])
+        self.assertEqual(api.member_calls, [])
+
+    def test_marker_from_non_officer_is_ignored(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE)])
+        api = ReactionApi(
+            jobs_messages=[m],
+            reactors={(m["id"], BRIEFCASE): ["u1"]},
+            members={"u1": []},
+        )
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(items, [])
+
+    def test_marker_from_officer_publishes(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE)])
+        api = ReactionApi(
+            jobs_messages=[m],
+            reactors={(m["id"], BRIEFCASE): ["u1"]},
+            members={"u1": [OFFICER_ROLE]},
+        )
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["kind"], "job")
+
+    def test_officer_briefcase_and_non_officer_cap_publishes_as_job(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE), reaction(GRADUATION_CAP)])
+        api = ReactionApi(
+            jobs_messages=[m],
+            reactors={
+                (m["id"], BRIEFCASE): ["u1"],
+                (m["id"], GRADUATION_CAP): ["u2"],
+            },
+            members={"u1": [OFFICER_ROLE], "u2": []},
+        )
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["kind"], "job")
+
+    def test_officer_briefcase_and_officer_cap_is_ambiguous(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE), reaction(GRADUATION_CAP)])
+        api = ReactionApi(
+            jobs_messages=[m],
+            reactors={
+                (m["id"], BRIEFCASE): ["u1"],
+                (m["id"], GRADUATION_CAP): ["u2"],
+            },
+            members={"u1": [OFFICER_ROLE], "u2": [OFFICER_ROLE]},
+        )
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(items, [])
+        self.assertIn("both job and internship markers", stderr.getvalue())
+
+    def test_member_fetch_404_counts_as_non_officer(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE)])
+        api = ReactionApi(
+            jobs_messages=[m],
+            reactors={(m["id"], BRIEFCASE): ["u-left-server"]},
+        )
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(items, [])
+
+    def test_no_marker_triggers_no_reactor_or_member_fetch(self):
+        m = message("Just chatting, no marker here.", reactions=[])
+        api = ReactionApi(jobs_messages=[m])
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(items, [])
+        self.assertEqual(api.reactor_calls, [])
+        self.assertEqual(api.member_calls, [])
+
+    def test_member_lookup_is_cached_across_messages(self):
+        m1 = message("First posting.", reactions=[reaction(BRIEFCASE)], message_id="1000000000000000001")
+        m2 = message("Second posting.", reactions=[reaction(BRIEFCASE)], message_id="1000000000000000002")
+        api = ReactionApi(
+            jobs_messages=[m1, m2],
+            reactors={
+                (m1["id"], BRIEFCASE): ["u1"],
+                (m2["id"], BRIEFCASE): ["u1"],
+            },
+            members={"u1": [OFFICER_ROLE]},
+        )
+        items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(len(items), 2)
+        self.assertEqual(api.member_calls, ["u1"])
+
+    def test_failing_reactors_fetch_is_swallowed(self):
+        m = message("Hiring now.", reactions=[reaction(BRIEFCASE)])
+        api = ReactionApi(jobs_messages=[m], fail_reactors=True)
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            items = build_items(CHANNEL, "", api, officer_role_ids={OFFICER_ROLE})
+        self.assertEqual(items, [])
+        self.assertIn("reactors fetch failed", stderr.getvalue())
 
 
 class TestBuildItems(unittest.TestCase):
