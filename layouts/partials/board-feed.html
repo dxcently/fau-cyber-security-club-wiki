@@ -4,8 +4,11 @@
   shortcode (content pages) and the board template (the landing page).
 
   Args (a dict):
-      data   file under data/, required — a JSON list written by a bot, or
-             a hand-edited TOML file whose [[items]] blocks are the list
+      data   file(s) under data/, required — a comma-separated list of one
+             or more names. Each is a JSON list written by a bot, or a
+             hand-edited TOML file whose [[items]] blocks are the list.
+             Entries from every named file are merged into one panel and
+             sorted newest-first by date before the filters below apply.
       kind   optional; keep only items whose "kind" matches
       limit  optional; show at most this many
 
@@ -20,12 +23,16 @@
 
   Every text field is escaped. Nothing in these files is trusted markup.
 */ -}}
-{{- $name := .data }}
 {{- $kind := .kind }}
-{{- $raw := index hugo.Data $name }}
 {{- $items := slice }}
-{{- if reflect.IsMap $raw }}{{ $items = index $raw "items" | default slice }}
-{{- else }}{{ $items = $raw | default slice }}{{ end }}
+{{- range split .data "," }}
+  {{- $raw := index hugo.Data (trim . " ") }}
+  {{- $list := slice }}
+  {{- if reflect.IsMap $raw }}{{ $list = index $raw "items" | default slice }}
+  {{- else }}{{ $list = $raw | default slice }}{{ end }}
+  {{- range $list }}{{ $items = $items | append . }}{{ end }}
+{{- end }}
+{{- $items = sort $items "date" "desc" }}
 {{- $today := now.Format "2006-01-02" }}
 {{- $keep := slice }}
 {{- range $items }}

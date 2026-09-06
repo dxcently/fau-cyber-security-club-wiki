@@ -9,10 +9,8 @@ Apply early — most close before the date they list.
 
 ## Internships
 
-{{< board-feed data="postings" kind="internship" >}}
-{{< board-feed data="discord-postings" kind="internship" >}}
+{{< board-feed data="postings,discord-postings" kind="internship" >}}
 
 ## Jobs
 
-{{< board-feed data="postings" kind="job" >}}
-{{< board-feed data="discord-postings" kind="job" >}}
+{{< board-feed data="postings,discord-postings" kind="job" >}}
