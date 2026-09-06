@@ -24,6 +24,7 @@ def clean(t):
     t = re.sub(r"<#\d+>|<@&\d+>|<@!?\d+>", "", t)      # channel / role / user mentions
     t = re.sub(r"<a?:(\w+):\d+>", r":\1:", t)          # custom emoji -> :name:
     # Discord markdown that would show as literal punctuation on the panel
+    t = re.sub(r"\[([^\]]+)\]\((https?://\S+?)\)", r"\1 \2", t)  # [label](url)
     t = re.sub(r"\*\*(.+?)\*\*", r"\1", t, flags=re.S)  # **bold**
     t = re.sub(r"__(.+?)__", r"\1", t, flags=re.S)          # __underline__
     t = re.sub(r"~~(.+?)~~", r"\1", t, flags=re.S)          # ~~strike~~

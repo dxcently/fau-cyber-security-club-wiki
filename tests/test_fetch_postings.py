@@ -9,6 +9,8 @@ from loadscript import load
 fetch_postings   = load("fetch-postings.py")
 classify         = fetch_postings.classify
 first_link       = fetch_postings.first_link
+apply_url        = fetch_postings.apply_url
+pick_link        = fetch_postings.pick_link
 deadline_fields  = fetch_postings.deadline_fields
 build_item       = fetch_postings.build_item
 
@@ -92,6 +94,65 @@ class TestFirstLink(unittest.TestCase):
 
     def test_no_link_returns_none(self):
         self.assertIsNone(first_link("No link in this one, just apply in Discord."))
+
+
+class TestApplyUrl(unittest.TestCase):
+    def test_apply_line_url_is_used(self):
+        raw = "Great internship.\napply: https://example.com/careers/42\nDM with questions."
+        self.assertEqual(apply_url(raw), "https://example.com/careers/42")
+
+    def test_case_insensitive_keyword(self):
+        raw = "APPLY: https://example.com/careers/42"
+        self.assertEqual(apply_url(raw), "https://example.com/careers/42")
+
+    def test_bold_markdown_keyword_still_matches(self):
+        raw = "**apply:** https://example.com/careers/42"
+        self.assertEqual(apply_url(raw), "https://example.com/careers/42")
+
+    def test_trailing_punctuation_stripped(self):
+        raw = "apply: https://example.com/careers/42."
+        self.assertEqual(apply_url(raw), "https://example.com/careers/42")
+
+    def test_non_url_value_does_not_match(self):
+        self.assertIsNone(apply_url("apply: in person at the career fair"))
+
+    def test_no_apply_line_returns_none(self):
+        self.assertIsNone(apply_url("Apply here: https://example.com/careers/42"))
+
+    def test_apply_line_wins_even_when_it_is_not_the_first_link(self):
+        raw = (
+            "Connect with the recruiter: https://www.linkedin.com/in/example/\n"
+            "apply: https://example.com/careers/42"
+        )
+        self.assertEqual(apply_url(raw), "https://example.com/careers/42")
+
+
+class TestPickLink(unittest.TestCase):
+    def test_single_link_is_used(self):
+        self.assertEqual(pick_link("Apply at https://example.com/careers/42 today."), "https://example.com/careers/42")
+
+    def test_no_links_returns_none(self):
+        self.assertIsNone(pick_link("DM me for details, no link posted."))
+
+    def test_profile_link_skipped_in_favor_of_a_later_job_link(self):
+        raw = (
+            "Connect with them directly:\n"
+            "https://www.linkedin.com/in/wadethomas/\n"
+            "https://www.linkedin.com/in/averyjonathan/\n\n"
+            "https://www.linkedin.com/jobs/view/4461193427/"
+        )
+        self.assertEqual(pick_link(raw), "https://www.linkedin.com/jobs/view/4461193427/")
+
+    def test_only_profile_links_falls_back_to_the_first_one(self):
+        raw = (
+            "https://www.linkedin.com/in/wadethomas/\n"
+            "https://www.linkedin.com/in/averyjonathan/"
+        )
+        self.assertEqual(pick_link(raw), "https://www.linkedin.com/in/wadethomas/")
+
+    def test_trailing_punctuation_stripped(self):
+        raw = "See https://www.linkedin.com/in/wadethomas/, then https://example.com/job."
+        self.assertEqual(pick_link(raw), "https://example.com/job")
 
 
 class TestDeadlineFieldsNoLine(unittest.TestCase):
@@ -291,6 +352,40 @@ class TestBuildItem(unittest.TestCase):
         item = build_item(m, GUILD, CHANNEL)
         self.assertEqual(item["starts"], "2026-03-30")
         self.assertEqual(item["expires"], "2026-04-05")
+
+    def test_apply_line_wins_over_any_body_link(self):
+        # Shaped like the channel's actual posts: a "connect with them" block
+        # of profile links, then the real job link further down, plus an
+        # explicit apply: line pinning a completely different URL.
+        raw = (
+            "Internship at NCCI — Boca Raton, FL\n\n"
+            "Connect with them directly:\n"
+            "https://www.linkedin.com/in/wadethomas/\n"
+            "https://www.linkedin.com/in/averyjonathan/\n\n"
+            "apply: https://example.com/careers/nnci-intern\n\n"
+            "https://www.linkedin.com/jobs/view/4461193427/"
+        )
+        m = message(raw, reactions=[reaction(GRADUATION_CAP)])
+        item = build_item(m, GUILD, CHANNEL)
+        self.assertEqual(item["url"], "https://example.com/careers/nnci-intern")
+
+    def test_profile_link_skipped_in_favor_of_later_job_link(self):
+        # The live posting this defect came from: five LinkedIn links, four
+        # of them personal profiles, and the job link is the last one.
+        raw = (
+            "📢 NCCI IT Infrastructure Internship — Boca Raton, FL\n\n"
+            "👤 Connect with them directly:\n"
+            "- [Wade Thomas — IT Infosec & Infrastructure Manager]\n"
+            "https://www.linkedin.com/in/wadethomas/\n\n"
+            "https://www.linkedin.com/in/averyjonathan/\n"
+            "https://www.linkedin.com/in/marcos-caceres-41ab49b2/\n"
+            "https://www.linkedin.com/in/nicolasbrugger/\n\n"
+            "Apply ASAP — DM me with questions.\n\n"
+            "https://www.linkedin.com/jobs/view/4461193427/"
+        )
+        m = message(raw, reactions=[reaction(GRADUATION_CAP)])
+        item = build_item(m, GUILD, CHANNEL)
+        self.assertEqual(item["url"], "https://www.linkedin.com/jobs/view/4461193427/")
 
 
 if __name__ == "__main__":
