@@ -1,4 +1,5 @@
 import io
+import json
 import sys
 import unittest
 from contextlib import redirect_stderr
@@ -6,13 +7,16 @@ from datetime import datetime
 
 from loadscript import load
 
-fetch_postings   = load("fetch-postings.py")
-classify         = fetch_postings.classify
-first_link       = fetch_postings.first_link
-apply_url        = fetch_postings.apply_url
-pick_link        = fetch_postings.pick_link
-deadline_fields  = fetch_postings.deadline_fields
-build_item       = fetch_postings.build_item
+fetch_postings          = load("fetch-postings.py")
+classify                = fetch_postings.classify
+first_link              = fetch_postings.first_link
+apply_url               = fetch_postings.apply_url
+pick_link               = fetch_postings.pick_link
+deadline_fields         = fetch_postings.deadline_fields
+build_item              = fetch_postings.build_item
+format_warning          = fetch_postings.format_warning
+notify_officer_channel  = fetch_postings.notify_officer_channel
+build_items             = fetch_postings.build_items
 
 GUILD   = "555000111222333444"
 CHANNEL = "666000111222333444"
@@ -386,6 +390,139 @@ class TestBuildItem(unittest.TestCase):
         m = message(raw, reactions=[reaction(GRADUATION_CAP)])
         item = build_item(m, GUILD, CHANNEL)
         self.assertEqual(item["url"], "https://www.linkedin.com/jobs/view/4461193427/")
+
+
+OFFICER_CHANNEL = "777000111222333444"
+BOT_ID          = "888000111222333444"
+
+
+class FakeApi:
+    """Stands in for fetch-postings.py's `api()` closure, no network involved.
+
+    Routes by path prefix the same way the real Discord endpoints split: the jobs
+    channel's own metadata and messages, the bot's own identity, and the officer
+    channel's messages — a GET (`data=None`) returning `officer_history`, a POST
+    (`data` set) recording the payload in `posted` and, if `fail_post`, raising
+    instead.
+    """
+
+    def __init__(self, jobs_messages=(), officer_history=(), bot_id=BOT_ID,
+                 fail_history=False, fail_post=False):
+        self.jobs_messages = list(jobs_messages)
+        self.officer_history = list(officer_history)
+        self.bot_id = bot_id
+        self.fail_history = fail_history
+        self.fail_post = fail_post
+        self.posted = []
+
+    def __call__(self, path, data=None):
+        if path == f"/channels/{CHANNEL}":
+            return {"guild_id": GUILD}
+        if path.startswith(f"/channels/{CHANNEL}/messages"):
+            return self.jobs_messages
+        if path == "/users/@me":
+            return {"id": self.bot_id}
+        if path.startswith(f"/channels/{OFFICER_CHANNEL}/messages"):
+            if data is not None:
+                if self.fail_post:
+                    raise RuntimeError("boom post")
+                self.posted.append(json.loads(data))
+                return {"id": "999999999999999999"}
+            if self.fail_history:
+                raise RuntimeError("boom history")
+            return self.officer_history
+        raise AssertionError(f"unexpected path {path!r}")
+
+
+def bot_message(content, author_id=BOT_ID):
+    return {"id": "1", "author": {"id": author_id}, "content": content}
+
+
+class TestFormatWarning(unittest.TestCase):
+    def test_exact_message_body(self):
+        body = format_warning(GUILD, CHANNEL, "1111122222333334444", "999000111222333444", "October 5):")
+        self.assertEqual(
+            body,
+            "⚠️ Couldn't read the deadline on "
+            f"https://discord.com/channels/{GUILD}/{CHANNEL}/1111122222333334444 "
+            "by <@999000111222333444>\n"
+            "It says: `October 5):`\n"
+            "Write it as `deadline: 2026-10-05` (or a range: `deadline: 03/30/2026 - 04/05/2026`)",
+        )
+
+
+class TestNotifyOfficerChannel(unittest.TestCase):
+    def test_warning_posted_with_right_shape_and_allowed_mentions(self):
+        api = FakeApi()
+        warnings = [("1111122222333334444", "999000111222333444", "October 5):")]
+        notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(len(api.posted), 1)
+        sent = api.posted[0]
+        self.assertEqual(sent["content"], format_warning(GUILD, CHANNEL, *warnings[0]))
+        self.assertEqual(sent["allowed_mentions"], {"parse": [], "users": ["999000111222333444"]})
+
+    def test_already_warned_id_is_skipped(self):
+        api = FakeApi(officer_history=[
+            bot_message("Couldn't read the deadline on a post: 1111122222333334444 ..."),
+        ])
+        warnings = [("1111122222333334444", "999000111222333444", "October 5):")]
+        notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(api.posted, [])
+
+    def test_warning_from_a_different_author_is_not_treated_as_already_warned(self):
+        api = FakeApi(officer_history=[
+            bot_message("some unrelated message", author_id="not-the-bot"),
+        ])
+        warnings = [("1111122222333334444", "999000111222333444", "October 5):")]
+        notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(len(api.posted), 1)
+
+    def test_no_warnings_makes_no_calls(self):
+        api = FakeApi()
+        notify_officer_channel([], GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(api.posted, [])
+
+    def test_failing_history_lookup_does_not_raise_and_skips_posting(self):
+        api = FakeApi(fail_history=True)
+        warnings = [("1111122222333334444", "999000111222333444", "October 5):")]
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(api.posted, [])
+        self.assertIn("officer channel", stderr.getvalue())
+
+    def test_failing_post_does_not_raise(self):
+        api = FakeApi(fail_post=True)
+        warnings = [("1111122222333334444", "999000111222333444", "October 5):")]
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            notify_officer_channel(warnings, GUILD, CHANNEL, OFFICER_CHANNEL, api)
+        self.assertIn("officer channel", stderr.getvalue())
+
+
+class TestBuildItems(unittest.TestCase):
+    def _bad_deadline_message(self):
+        return message("Hiring now.\ndeadline: sometime soon", reactions=[reaction(BRIEFCASE)])
+
+    def test_unset_officer_channel_posts_nothing(self):
+        api = FakeApi(jobs_messages=[self._bad_deadline_message()])
+        items = build_items(CHANNEL, "", api)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(api.posted, [])
+
+    def test_set_officer_channel_posts_warning_and_still_returns_items(self):
+        api = FakeApi(jobs_messages=[self._bad_deadline_message()])
+        items = build_items(CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(len(api.posted), 1)
+
+    def test_failing_officer_channel_call_does_not_raise_and_items_are_returned(self):
+        api = FakeApi(jobs_messages=[self._bad_deadline_message()], fail_history=True)
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            items = build_items(CHANNEL, OFFICER_CHANNEL, api)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(api.posted, [])
 
 
 if __name__ == "__main__":
