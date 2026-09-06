@@ -253,9 +253,14 @@ public/             generated output — NEVER hand-edit
 .github/workflows/  CI — builds the site on every PR and push to main
 ```
 
-The submodule is not optional. A fresh clone has an empty `themes/relearn/`
-and Hugo will build a site with no layouts rather than fail. Run
-`git submodule update --init` first.
+The submodule is not optional. A fresh clone has an empty `themes/relearn/`.
+Hugo does not degrade gracefully: it hard-fails (`hugo` exits non-zero, no
+`public/` at all) the moment it hits a shortcode the theme provides, such as
+`mermaid`. The error names the content file and line — e.g. "template for
+shortcode 'mermaid' not found" — which looks exactly like a broken shortcode
+call in that specific page. It is not; the shortcode call is fine, the theme
+providing it just isn't checked out. Run `git submodule update --init` first,
+before suspecting any content.
 
 ### Key config files
 
