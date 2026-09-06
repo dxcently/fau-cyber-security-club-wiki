@@ -32,6 +32,17 @@ from scratch every five minutes, so before posting, the officer channel's
 own recent messages are checked for one already naming the offending
 message id.
 
+When DISCORD_OFFICER_ROLE_IDS is set to a comma-separated list of guild role
+ids, a marker reaction only counts toward classify_markers() if at least one
+of its reactors holds one of those roles — see build_item() and
+_marker_counts(). A message's reactors and a reactor's guild roles are only
+fetched when the message already carries a marker reaction, and each
+reactor's roles are looked up once per run and cached (_member_roles()). A
+failed lookup — a reactor who left the guild, a Discord hiccup — counts as
+"holds no roles" rather than raising; the sync keeps going either way. When
+the variable is unset or empty, any reactor counts, exactly as before this
+existed.
+
 The card's "Open ->" link is picked in order: an `apply:` line's URL, if
 the author set one; else the first link in the message that isn't a known
 personal-profile URL (see PROFILE_LINK_RES); else the first link outright;
@@ -42,7 +53,7 @@ commits and pushes, and rebases onto main first so a concurrent push does
 not wedge it.
 """
 import importlib.util
-import json, os, re, subprocess, sys, urllib.request
+import json, os, re, subprocess, sys, urllib.parse, urllib.request
 from datetime import datetime
 
 API  = "https://discord.com/api/v10"
@@ -128,19 +139,58 @@ def _load_sibling(name):
 
 clean = _load_sibling("fetch-announcements.py").clean
 
-def classify(message):
-    """Return "job", "internship", or None from a message's marker reactions."""
-    names = {r["emoji"]["name"] for r in message.get("reactions", []) if r.get("emoji")}
-    is_job         = BRIEFCASE in names
-    is_internship  = GRADUATION_CAP in names
+def _marker_names(message):
+    """The set of reaction emoji names on a message, marker or not."""
+    return {r["emoji"]["name"] for r in message.get("reactions", []) if r.get("emoji")}
+
+def classify_markers(is_job, is_internship, message_id):
+    """The "job"/"internship"/None decision, given which markers count.
+
+    Shared by classify() (any reactor counts) and build_item()'s
+    DISCORD_OFFICER_ROLE_IDS path (only an officer's reactor counts) — the
+    ambiguity rule is the same either way.
+    """
     if is_job and is_internship:
-        print(f"skip {message.get('id')}: carries both job and internship markers", file=sys.stderr)
+        print(f"skip {message_id}: carries both job and internship markers", file=sys.stderr)
         return None
     if is_job:
         return "job"
     if is_internship:
         return "internship"
     return None
+
+def classify(message):
+    """Return "job", "internship", or None from a message's marker reactions."""
+    names = _marker_names(message)
+    return classify_markers(BRIEFCASE in names, GRADUATION_CAP in names, message.get("id"))
+
+def _member_roles(guild, user_id, cache, api):
+    """Cached set of role ids a guild member holds; any lookup failure means none.
+
+    A 404 (the reactor left the guild) or any other error — rate limit,
+    network hiccup — is indistinguishable here on purpose: either way there
+    is no role to check, not an error worth stopping the sync for.
+    """
+    if user_id not in cache:
+        try:
+            cache[user_id] = set(api(f"/guilds/{guild}/members/{user_id}").get("roles", []))
+        except Exception:
+            cache[user_id] = set()
+    return cache[user_id]
+
+def _marker_counts(message, emoji, guild, channel, allowed_roles, member_cache, api):
+    """True if a reactor of `emoji` on `message` holds one of `allowed_roles`.
+
+    Only called for a marker already known to be present on the message —
+    see build_item(). A failed reactors fetch is treated as no counting
+    reactors on this message, printed once to stderr; the sync continues.
+    """
+    try:
+        reactors = api(f"/channels/{channel}/messages/{message['id']}/reactions/{urllib.parse.quote(emoji, safe='')}")
+    except Exception as e:
+        print(f"reactors fetch failed for message {message.get('id')} marker {emoji!r}: {e}", file=sys.stderr)
+        return False
+    return any(_member_roles(guild, user["id"], member_cache, api) & allowed_roles for user in reactors)
 
 def first_link(raw):
     """First http(s) link in the raw (uncleaned) message content, if any."""
@@ -280,14 +330,28 @@ def deadline_fields(raw, ref):
             return {"expires": expires.isoformat()}, None
     return {}, text
 
-def build_item(message, guild, channel, warnings=None):
+def build_item(message, guild, channel, warnings=None, officer_role_ids=None, member_cache=None, api=None):
     """Build one data/discord-postings.json entry from a fetched message, or None to skip it.
 
     When `warnings` is given, an unparseable `deadline:` line also appends
     (message_id, author_id, bad_text) to it, for notify_officer_channel() —
     on top of the stderr print below, which always happens regardless.
+
+    When `officer_role_ids` is a non-empty set, a marker only counts if one
+    of its reactors holds one of those roles (see _marker_counts()) — `and`
+    short-circuits so a marker absent from the message never triggers a
+    reactors fetch. `member_cache` and `api` are required in that case; left
+    unset (the default), behaviour is unchanged: any reactor counts.
     """
-    kind = classify(message)
+    if officer_role_ids:
+        names = _marker_names(message)
+        is_job = BRIEFCASE in names and _marker_counts(
+            message, BRIEFCASE, guild, channel, officer_role_ids, member_cache, api)
+        is_internship = GRADUATION_CAP in names and _marker_counts(
+            message, GRADUATION_CAP, guild, channel, officer_role_ids, member_cache, api)
+        kind = classify_markers(is_job, is_internship, message.get("id"))
+    else:
+        kind = classify(message)
     if kind is None:
         return None
     raw = message.get("content", "")
@@ -349,18 +413,23 @@ def notify_officer_channel(warnings, guild, jobs_channel, officer_channel, api):
         except Exception as e:
             print(f"officer channel: could not post warning for {message_id}: {e}", file=sys.stderr)
 
-def build_items(jobs_channel, officer_channel, api):
+def build_items(jobs_channel, officer_channel, api, officer_role_ids=None):
     """Fetch #jobs, build the postings list, and (best-effort) flag bad deadlines.
 
     `api` is injected so tests can stub Discord out entirely. `officer_channel` may be
     None or empty — meaning DISCORD_OFFICER_CHANNEL_ID is unset — in which case no
     officer-channel call is made at all, and behaviour is exactly what it was before
-    that feature existed.
+    that feature existed. `officer_role_ids`, likewise, may be None or empty — meaning
+    DISCORD_OFFICER_ROLE_IDS is unset — for the same reason. `member_cache` lives here,
+    not in build_item(), so a reactor's guild roles are looked up once for the whole run
+    even when they reacted on more than one message.
     """
     guild = api(f"/channels/{jobs_channel}")["guild_id"]
     messages = api(f"/channels/{jobs_channel}/messages?limit={SCAN}")
     warnings = []
-    items = [i for i in (build_item(m, guild, jobs_channel, warnings) for m in messages) if i]
+    member_cache = {}
+    items = [i for i in (build_item(m, guild, jobs_channel, warnings, officer_role_ids, member_cache, api)
+                          for m in messages) if i]
     items.sort(key=lambda i: i["date"], reverse=True)
     del items[WANT:]
     if officer_channel:
@@ -368,9 +437,10 @@ def build_items(jobs_channel, officer_channel, api):
     return items
 
 def main():
-    token           = os.environ.get("DISCORD_BOT_TOKEN")
-    channel         = os.environ.get("DISCORD_JOBS_CHANNEL_ID")
-    officer_channel = os.environ.get("DISCORD_OFFICER_CHANNEL_ID")
+    token            = os.environ.get("DISCORD_BOT_TOKEN")
+    channel          = os.environ.get("DISCORD_JOBS_CHANNEL_ID")
+    officer_channel  = os.environ.get("DISCORD_OFFICER_CHANNEL_ID")
+    officer_role_ids = {r.strip() for r in os.environ.get("DISCORD_OFFICER_ROLE_IDS", "").split(",") if r.strip()}
     if not (token and channel):
         sys.exit("DISCORD_BOT_TOKEN and DISCORD_JOBS_CHANNEL_ID must be set")
 
@@ -385,7 +455,7 @@ def main():
         with urllib.request.urlopen(req, timeout=20) as r:
             return json.load(r)
 
-    items = build_items(channel, officer_channel, api)
+    items = build_items(channel, officer_channel, api, officer_role_ids)
 
     new = json.dumps(items, indent=2, ensure_ascii=False) + "\n"
     old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""

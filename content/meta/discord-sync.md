@@ -27,6 +27,9 @@ Nothing publishes without one of these two reactions. React with both and the
 post is skipped — the bot cannot tell which board it belongs on, so it
 publishes neither.
 
+Only a reaction from an officer publishes a post, so an officer can also
+publish a member's post by reacting to it themselves.
+
 Remove the reaction later and the post drops off the board on the next sync.
 
 ## Setting a deadline
