@@ -1,19 +1,24 @@
+import io
+import sys
 import unittest
+from contextlib import redirect_stderr
+from datetime import datetime
 
 from loadscript import load
 
-fetch_postings  = load("fetch-postings.py")
-classify        = fetch_postings.classify
-first_link      = fetch_postings.first_link
-expires_for     = fetch_postings.expires_for
-author_deadline = fetch_postings.author_deadline
-build_item      = fetch_postings.build_item
+fetch_postings   = load("fetch-postings.py")
+classify         = fetch_postings.classify
+first_link       = fetch_postings.first_link
+deadline_fields  = fetch_postings.deadline_fields
+build_item       = fetch_postings.build_item
 
 GUILD   = "555000111222333444"
 CHANNEL = "666000111222333444"
 
 BRIEFCASE      = "\U0001F4BC"
 GRADUATION_CAP = "\U0001F393"
+
+REF = datetime.fromisoformat("2026-08-01T15:04:23.512000+00:00")
 
 
 def reaction(name, count=1):
@@ -89,50 +94,156 @@ class TestFirstLink(unittest.TestCase):
         self.assertIsNone(first_link("No link in this one, just apply in Discord."))
 
 
-class TestExpiresFor(unittest.TestCase):
-    def test_exactly_thirty_days_after_timestamp(self):
-        self.assertEqual(expires_for("2026-08-01T15:04:23.512000+00:00"), "2026-08-31")
+class TestDeadlineFieldsNoLine(unittest.TestCase):
+    def test_no_deadline_line_yields_no_fields(self):
+        fields, bad = deadline_fields("Apply whenever, no rush.", REF)
+        self.assertEqual(fields, {})
+        self.assertIsNone(bad)
 
-    def test_crosses_month_boundary(self):
-        self.assertEqual(expires_for("2026-01-15T00:00:00.000000+00:00"), "2026-02-14")
-
-    def test_author_deadline_overrides_default(self):
-        raw = "Apply soon.\ndeadline: 2026-09-05"
-        self.assertEqual(expires_for("2026-08-01T15:04:23.512000+00:00", raw), "2026-09-05")
-
-    def test_no_deadline_line_falls_back_to_default(self):
-        raw = "No deadline mentioned here."
-        self.assertEqual(expires_for("2026-08-01T15:04:23.512000+00:00", raw), "2026-08-31")
+    def test_synonym_keyword_not_accepted(self):
+        fields, bad = deadline_fields("closes: 2026-09-05", REF)
+        self.assertEqual(fields, {})
+        self.assertIsNone(bad)
 
 
-class TestAuthorDeadline(unittest.TestCase):
-    def test_explicit_deadline_is_used(self):
-        self.assertEqual(author_deadline("deadline: 2026-09-05"), "2026-09-05")
+class TestDeadlineFieldsSingleDate(unittest.TestCase):
+    def test_iso_date(self):
+        fields, bad = deadline_fields("deadline: 2026-10-05", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
+        self.assertIsNone(bad)
 
-    def test_no_deadline_line_returns_none(self):
-        self.assertIsNone(author_deadline("Apply whenever, no rush."))
+    def test_us_slash_date_with_four_digit_year(self):
+        fields, _ = deadline_fields("deadline: 10/05/2026", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
 
-    def test_malformed_date_falls_back(self):
-        self.assertIsNone(author_deadline("deadline: 09-05-2026"))
+    def test_us_slash_date_with_two_digit_year(self):
+        fields, _ = deadline_fields("deadline: 10/5/26", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
 
-    def test_non_iso_format_falls_back(self):
-        self.assertIsNone(author_deadline("deadline: Oct 5"))
+    def test_us_dash_date(self):
+        fields, _ = deadline_fields("deadline: 10-5-2026", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
 
-    def test_invalid_calendar_date_falls_back(self):
-        self.assertIsNone(author_deadline("deadline: 2026-13-45"))
+    def test_written_out_date_with_comma(self):
+        fields, _ = deadline_fields("deadline: October 5, 2026", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
+
+    def test_abbreviated_month_no_comma(self):
+        fields, _ = deadline_fields("deadline: Oct 5 2026", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
+
+    def test_ordinal_suffix(self):
+        fields, bad = deadline_fields("deadline: Oct 5th", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
+        self.assertIsNone(bad)
+
+    def test_day_first_written_date(self):
+        fields, _ = deadline_fields("deadline: 5 October 2026", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
 
     def test_bold_markdown_keyword_still_matches(self):
-        self.assertEqual(author_deadline("**deadline:** 2026-10-05"), "2026-10-05")
+        fields, _ = deadline_fields("**deadline:** 2026-10-05", REF)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
 
     def test_case_insensitive_keyword(self):
-        self.assertEqual(author_deadline("DEADLINE: 2026-09-05"), "2026-09-05")
+        fields, _ = deadline_fields("DEADLINE: 2026-09-05", REF)
+        self.assertEqual(fields, {"expires": "2026-09-05"})
 
     def test_deadline_line_anywhere_in_body(self):
         raw = "Hey everyone, cool internship!\n\ndeadline: 2026-09-05\n\nApply on our site."
-        self.assertEqual(author_deadline(raw), "2026-09-05")
+        fields, _ = deadline_fields(raw, REF)
+        self.assertEqual(fields, {"expires": "2026-09-05"})
 
-    def test_synonym_keyword_not_accepted(self):
-        self.assertIsNone(author_deadline("closes: 2026-09-05"))
+    def test_no_starts_key_for_a_single_date(self):
+        fields, _ = deadline_fields("deadline: 2026-10-05", REF)
+        self.assertNotIn("starts", fields)
+
+
+class TestDeadlineFieldsYearlessDate(unittest.TestCase):
+    def test_month_day_after_ref_resolves_to_current_year(self):
+        # REF is 2026-08-01; Nov 1 hasn't happened yet this year.
+        fields, _ = deadline_fields("deadline: Nov 1", REF)
+        self.assertEqual(fields, {"expires": "2026-11-01"})
+
+    def test_month_day_before_ref_resolves_to_next_year(self):
+        # REF is 2026-08-01; Jan 1 already passed this year.
+        fields, _ = deadline_fields("deadline: Jan 1", REF)
+        self.assertEqual(fields, {"expires": "2027-01-01"})
+
+
+class TestDeadlineFieldsRange(unittest.TestCase):
+    def test_hyphen_separator(self):
+        fields, bad = deadline_fields("deadline: 03/30/2026 - 04/05/2026", REF)
+        self.assertEqual(fields, {"starts": "2026-03-30", "expires": "2026-04-05"})
+        self.assertIsNone(bad)
+
+    def test_to_separator_with_written_dates(self):
+        fields, bad = deadline_fields("deadline: March 30 to April 5, 2026", REF)
+        self.assertEqual(fields, {"starts": "2026-03-30", "expires": "2026-04-05"})
+        self.assertIsNone(bad)
+
+    def test_en_dash_separator(self):
+        fields, _ = deadline_fields("deadline: March 30 – April 5, 2026", REF)
+        self.assertEqual(fields, {"starts": "2026-03-30", "expires": "2026-04-05"})
+
+    def test_em_dash_separator(self):
+        fields, _ = deadline_fields("deadline: March 30 — April 5, 2026", REF)
+        self.assertEqual(fields, {"starts": "2026-03-30", "expires": "2026-04-05"})
+
+    def test_year_on_end_only_applies_to_both_sides(self):
+        # Without this, a naive year-less resolve would push "March 30" (a
+        # date already past REF this year) into 2027 while "April 5, 2026"
+        # stayed put, splitting the range across two different years.
+        fields, _ = deadline_fields("deadline: March 30 to April 5, 2026", REF)
+        self.assertEqual(fields["starts"][:4], fields["expires"][:4])
+
+    def test_numeric_dash_dates_do_not_get_split_mid_date(self):
+        fields, bad = deadline_fields("deadline: 10-5-2026", REF)
+        self.assertNotIn("starts", fields)
+        self.assertEqual(fields, {"expires": "2026-10-05"})
+        self.assertIsNone(bad)
+
+
+class TestDeadlineFieldsMalformed(unittest.TestCase):
+    def test_unrecognized_text_yields_no_expires(self):
+        fields, bad = deadline_fields("deadline: whenever works", REF)
+        self.assertEqual(fields, {})
+        self.assertIsNotNone(bad)
+
+    def test_impossible_calendar_date_yields_no_expires(self):
+        fields, bad = deadline_fields("deadline: 2026-13-45", REF)
+        self.assertEqual(fields, {})
+        self.assertIsNotNone(bad)
+
+    def test_non_iso_numeric_with_wrong_field_count_is_malformed(self):
+        fields, bad = deadline_fields("deadline: 2026/40/99", REF)
+        self.assertEqual(fields, {})
+        self.assertIsNotNone(bad)
+
+
+class TestBuildItemDeadlineWarnings(unittest.TestCase):
+    def _run(self, content, timestamp="2026-08-01T15:04:23.512000+00:00"):
+        m = message(content, reactions=[reaction(BRIEFCASE)], timestamp=timestamp)
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            item = build_item(m, GUILD, CHANNEL)
+        return item, stderr.getvalue()
+
+    def test_no_deadline_line_does_not_warn(self):
+        item, err = self._run("Hiring now, apply on our site.")
+        self.assertNotIn("expires", item)
+        self.assertEqual(err, "")
+
+    def test_malformed_deadline_warns_and_omits_expires(self):
+        item, err = self._run("Hiring now.\ndeadline: sometime soon")
+        self.assertNotIn("expires", item)
+        self.assertIn("1111122222333334444", err)
+        self.assertIn("sometime soon", err)
+
+    def test_valid_deadline_does_not_warn(self):
+        item, err = self._run("Hiring now.\ndeadline: 2026-10-05")
+        self.assertEqual(item["expires"], "2026-10-05")
+        self.assertEqual(err, "")
 
 
 class TestBuildItem(unittest.TestCase):
@@ -146,7 +257,7 @@ class TestBuildItem(unittest.TestCase):
         self.assertEqual(item["kind"], "job")
         self.assertEqual(item["url"], "https://example.com/apply")
         self.assertEqual(item["date"], "2026-08-01T15:04:23.512000+00:00")
-        self.assertEqual(item["expires"], "2026-08-31")
+        self.assertNotIn("expires", item)
         self.assertNotIn("**", item["text"])
         self.assertNotIn("@everyone", item["text"])
         self.assertIn("💼", item["text"])
@@ -171,6 +282,15 @@ class TestBuildItem(unittest.TestCase):
         self.assertIn("🚨", item["text"])
         self.assertIn("📢", item["text"])
         self.assertIn("🎓", item["text"])
+
+    def test_range_deadline_sets_starts_and_expires(self):
+        m = message(
+            "Career fair booth sign-ups.\ndeadline: 03/30/2026 - 04/05/2026",
+            reactions=[reaction(BRIEFCASE)],
+        )
+        item = build_item(m, GUILD, CHANNEL)
+        self.assertEqual(item["starts"], "2026-03-30")
+        self.assertEqual(item["expires"], "2026-04-05")
 
 
 if __name__ == "__main__":
