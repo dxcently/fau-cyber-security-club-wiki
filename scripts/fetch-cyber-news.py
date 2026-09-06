@@ -28,13 +28,8 @@ def fetch(url):
     with urllib.request.urlopen(req, timeout=20) as r:
         return ET.fromstring(r.read())
 
-items = []
-for source, url in FEEDS.items():
-    try:
-        root = fetch(url)
-    except Exception as e:                    # one dead feed must not empty the page
-        print(f"skip {source}: {e}", file=sys.stderr)
-        continue
+def parse_feed(root, source):
+    """Pull the newest PER_SOURCE items out of a parsed RSS <channel> root."""
     got = []
     for it in root.iter("item"):
         title = (it.findtext("title") or "").strip()
@@ -49,27 +44,40 @@ for source, url in FEEDS.items():
             "url":    link,
         })
     got.sort(key=lambda i: i["date"], reverse=True)
-    items += got[:PER_SOURCE]
+    return got[:PER_SOURCE]
 
-items.sort(key=lambda i: i["date"], reverse=True)
+def main():
+    items = []
+    for source, url in FEEDS.items():
+        try:
+            root = fetch(url)
+        except Exception as e:                # one dead feed must not empty the page
+            print(f"skip {source}: {e}", file=sys.stderr)
+            continue
+        items += parse_feed(root, source)
 
-new = json.dumps(items, indent=2, ensure_ascii=False) + "\n"
-old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
-if new == old:
-    print("unchanged")
-    sys.exit(0)
+    items.sort(key=lambda i: i["date"], reverse=True)
 
-if "--dry-run" in sys.argv:
-    print(new)
-    sys.exit(0)
+    new = json.dumps(items, indent=2, ensure_ascii=False) + "\n"
+    old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
+    if new == old:
+        print("unchanged")
+        sys.exit(0)
 
-open(OUT, "w", encoding="utf-8").write(new)
+    if "--dry-run" in sys.argv:
+        print(new)
+        sys.exit(0)
 
-ident = ["-c", "user.name=csc-announcements-bot",
-         "-c", "user.email=csc-announcements-bot@users.noreply.github.com"]
-push  = ["-c", "credential.helper=!gh auth git-credential"]
-subprocess.run(["git", "add", OUT], check=True)
-subprocess.run(["git", *ident, "commit", "-q", "-m", "cyber-news: sync from RSS"], check=True)
-subprocess.run(["git", "pull", "--rebase", "--quiet", "origin", "main"], check=True)
-subprocess.run(["git", *push, "push", "-q", "origin", "HEAD:main"], check=True)
-print(f"published {len(items)} headline(s)")
+    open(OUT, "w", encoding="utf-8").write(new)
+
+    ident = ["-c", "user.name=csc-announcements-bot",
+             "-c", "user.email=csc-announcements-bot@users.noreply.github.com"]
+    push  = ["-c", "credential.helper=!gh auth git-credential"]
+    subprocess.run(["git", "add", OUT], check=True)
+    subprocess.run(["git", *ident, "commit", "-q", "-m", "cyber-news: sync from RSS"], check=True)
+    subprocess.run(["git", "pull", "--rebase", "--quiet", "origin", "main"], check=True)
+    subprocess.run(["git", *push, "push", "-q", "origin", "HEAD:main"], check=True)
+    print(f"published {len(items)} headline(s)")
+
+if __name__ == "__main__":
+    main()
