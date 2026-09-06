@@ -156,8 +156,18 @@ date formats and a `start - end` range are accepted, see the module
 docstring — with no `deadline:` line leaving the posting with no expiry at
 all. A `deadline:` line present but unparseable also leaves it with no
 expiry, but prints a warning to stderr, since that's a poster's typo worth
-surfacing. `data/postings.toml` is a separate, hand-edited file neither
-script writes to; `layouts/partials/board-feed.html` merges it with
+surfacing.
+
+The card's `url` (what "Open →" points at) is picked in order: an `apply:`
+line's link, same convention as `deadline:`; else the first link in the
+message that isn't a known personal-profile URL (`linkedin.com/in/` today —
+see `PROFILE_LINK_RES` in the module); else the first link outright; else
+the Discord permalink. `layouts/partials/board-feed.html` also linkifies
+every http(s) URL inside a posting's own body text, so a reader isn't
+limited to the one link the card's button uses.
+
+`data/postings.toml` is a separate, hand-edited file neither script writes
+to; `layouts/partials/board-feed.html` merges it with
 `discord-postings.json` at render time, so both feed the same board
 sections. See [`content/meta/discord-sync.md`](content/meta/discord-sync.md)
 for the officer-facing version of this workflow.
