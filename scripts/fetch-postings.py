@@ -24,6 +24,7 @@ import json, os, re, subprocess, sys, urllib.request
 from datetime import datetime, timedelta
 
 API  = "https://discord.com/api/v10"
+WANT = 50    # postings to publish
 SCAN = 100   # Discord's per-request max; the whole channel fits one page
 OUT  = "data/discord-postings.json"
 
@@ -105,6 +106,7 @@ def main():
     messages = api(f"/channels/{channel}/messages?limit={SCAN}")
     items = [i for i in (build_item(m, guild, channel) for m in messages) if i]
     items.sort(key=lambda i: i["date"], reverse=True)
+    del items[WANT:]
 
     new = json.dumps(items, indent=2, ensure_ascii=False) + "\n"
     old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
