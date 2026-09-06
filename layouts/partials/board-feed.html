@@ -27,6 +27,9 @@
                window already shows the end date
 
   Every text field is escaped. Nothing in these files is trusted markup.
+  text/message is additionally linkified: escaped first, then http(s)
+  URL-shaped tokens inside it are wrapped in anchors — see the comment at
+  that render site for why this can't reopen the escaping.
 */ -}}
 {{- $kind := .kind }}
 {{- $items := slice }}
@@ -64,7 +67,30 @@
         {{- with .url }}<a class="wf-ann__link" href="{{ . }}" rel="external">Open →</a>{{ end }}
       </p>
       {{- with or .title .name }}<p class="wf-ann__text"><strong>{{ . }}</strong></p>{{ end }}
-      {{- with or .text .message }}<p class="wf-ann__text">{{ . }}</p>{{ end }}
+      {{- with or .text .message }}
+        {{- /*
+          Linkify: escape first, THEN wrap URL-shaped tokens in anchors, THEN
+          mark the result safe. Because the wrapping regex only ever runs
+          against already-escaped text, an anchor it inserts can only ever
+          surround a token that matched the URL pattern in that escaped
+          text — it cannot introduce a raw `<`, `>`, `"` or `'`.
+
+          The `&amp;` alternative lets a query-string ampersand (escaped
+          from `&`) stay inside the URL, while a bare `&` still stops the
+          match — so `&lt;`, `&gt;`, `&quot;` and `&#39;` next to a URL are
+          never swallowed, since none of them literally spell "amp;".
+
+          The trailing character is drawn from a class that excludes
+          `.,;:!?)]` — sentence punctuation right after a URL, or a closing
+          quote (already unmatchable, see above) is left outside the anchor.
+
+          Balanced parentheses inside a URL (Wikipedia-style) are not
+          supported: the first `)` always ends the match.
+        */ -}}
+        {{- $escaped := htmlEscape . }}
+        {{- $linked := replaceRE `(https?://(?:&amp;|[^\s&<>"'])*(?:&amp;|[^\s&<>"'.,;:!?)\]]))` `<a href="$1" rel="external">$1</a>` $escaped }}
+        <p class="wf-ann__text">{{ $linked | safeHTML }}</p>
+      {{- end }}
     </li>
   {{- end }}
   </ul>

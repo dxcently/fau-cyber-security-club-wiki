@@ -24,6 +24,11 @@ rides the board until it ages out of the channel or the 50-item cap. A
 but — unlike a missing line — it prints a warning, since that is a
 poster's typo the sync should surface rather than silently swallow.
 
+The card's "Open ->" link is picked in order: an `apply:` line's URL, if
+the author set one; else the first link in the message that isn't a known
+personal-profile URL (see PROFILE_LINK_RES); else the first link outright;
+else the Discord permalink. See apply_url() and pick_link().
+
 Meant to run from the same dedicated checkout as fetch-announcements.py: it
 commits and pushes, and rebases onto main first so a concurrent push does
 not wedge it.
@@ -41,6 +46,27 @@ BRIEFCASE      = "\U0001F4BC"  # 💼
 GRADUATION_CAP = "\U0001F393"  # 🎓
 
 LINK_RE = re.compile(r"https?://\S+")
+
+# Author opt-in: an `apply:` line, anywhere in the raw message, whose value
+# is itself an http(s) URL — same markdown tolerance as DEADLINE_LINE_RE
+# below (`**apply:**`), matched before clean() strips it. If the text after
+# the colon isn't a URL, this simply doesn't match and url selection falls
+# through to the link-scanning rules in apply_url()'s caller.
+APPLY_LINE_RE = re.compile(r"(?i)[*_]{0,2}apply[*_]{0,2}:[*_]{0,2}\s*(https?://\S+)")
+
+# Trailing punctuation a URL picked out of prose shouldn't keep — the closing
+# `.`/`,`/`)` of the sentence around it, not part of the link itself. Same
+# set the board-feed.html linkify regex excludes from its final character;
+# keep the two in sync. Balanced parentheses inside a URL (Wikipedia-style)
+# are the same accepted edge case: a trailing `)` is always stripped.
+TRAILING_URL_PUNCT = ".,;:!?)]\"'’”"
+
+# Links that point at a person, not a job: not what "Open ->" should send a
+# reader to. Small and explicit on purpose — grow this list as new patterns
+# turn up instead of writing a general classifier.
+PROFILE_LINK_RES = [
+    re.compile(r"(?i)linkedin\.com/in/"),
+]
 
 # Author opt-in: a `deadline:` line, anywhere in the raw message, followed by
 # a date or a date range. Tolerant of markdown emphasis around the keyword
@@ -112,6 +138,38 @@ def first_link(raw):
     """First http(s) link in the raw (uncleaned) message content, if any."""
     m = LINK_RE.search(raw)
     return m.group(0) if m else None
+
+def _strip_trailing_url_punct(url):
+    """Trim trailing sentence punctuation a regex match swept up with a URL."""
+    return url.rstrip(TRAILING_URL_PUNCT)
+
+def _is_profile_link(url):
+    """True for a link that points at a person rather than a job posting."""
+    return any(p.search(url) for p in PROFILE_LINK_RES)
+
+def apply_url(raw):
+    """The `apply:` line's URL, if the raw message has one — or None.
+
+    The officer-facing opt-in: whoever posts can pin exactly which link the
+    board's "Open ->" button should use, the same way `deadline:` pins the
+    closing date.
+    """
+    m = APPLY_LINE_RE.search(raw)
+    return _strip_trailing_url_punct(m.group(1)) if m else None
+
+def pick_link(raw):
+    """Best-guess http(s) link from the raw message body, or None.
+
+    The first link whose host+path doesn't match a known personal-profile
+    pattern (see PROFILE_LINK_RES) — falling back to the first link outright
+    if every link found is a profile link. A message with no links at all
+    returns None.
+    """
+    links = [_strip_trailing_url_punct(m.group(0)) for m in LINK_RE.finditer(raw)]
+    for link in links:
+        if not _is_profile_link(link):
+            return link
+    return links[0] if links else None
 
 def _normalize_date_text(text):
     """Strip an ordinal suffix (`5th` -> `5`) and collapse whitespace."""
@@ -220,7 +278,8 @@ def build_item(message, guild, channel):
     if kind is None:
         return None
     raw = message.get("content", "")
-    url = first_link(raw) or f"https://discord.com/channels/{guild}/{channel}/{message['id']}"
+    url = (apply_url(raw) or pick_link(raw)
+           or f"https://discord.com/channels/{guild}/{channel}/{message['id']}")
     fields, bad = deadline_fields(raw, datetime.fromisoformat(message["timestamp"]))
     if bad is not None:
         print(f"deadline unparseable in message {message.get('id')}: {bad!r}", file=sys.stderr)

@@ -47,6 +47,24 @@ class TestClean(unittest.TestCase):
         self.assertEqual(clean("🚨 job posting 📢"), "🚨 job posting 📢")
         self.assertEqual(clean("🎓 congrats grads 👀"), "🎓 congrats grads 👀")
 
+    def test_markdown_link_becomes_label_then_bare_url(self):
+        self.assertEqual(
+            clean("[Wade Thomas](https://www.linkedin.com/in/wadethomas/)"),
+            "Wade Thomas https://www.linkedin.com/in/wadethomas/",
+        )
+
+    def test_markdown_link_inline_with_other_text(self):
+        self.assertEqual(
+            clean("Apply through [our site](https://example.com/jobs/42) today."),
+            "Apply through our site https://example.com/jobs/42 today.",
+        )
+
+    def test_bold_markdown_link_loses_both_markers(self):
+        self.assertEqual(
+            clean("**[Apply here](https://example.com/apply)**"),
+            "Apply here https://example.com/apply",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

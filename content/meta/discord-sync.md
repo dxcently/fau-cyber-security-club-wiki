@@ -50,6 +50,24 @@ on the board until newer postings push it off, not for a fixed number of
 days. Type a `deadline:` line the bot can't read and the posting behaves
 the same way — no closing date — so get the date right if you want one.
 
+## Pointing "Open ->" at the right link
+
+Every link in your post is clickable on the board — you don't need to do
+anything for that. But the card also has its own "Open ->" button, and the
+bot has to guess which link that button should use. If your message has
+more than one link — your LinkedIn, a company page, the actual job posting
+— the guess can pick the wrong one.
+
+Pin it yourself with an `apply:` line, anywhere in the message:
+
+```
+apply: https://example.com/careers/42
+```
+
+The word must be `apply`, and the value must be a link. Add this line and
+the bot always uses it for "Open ->," no matter how many other links are in
+the post.
+
 ## Fixing a mistake
 
 Edit the Discord message, not the wiki. Every sync rebuilds the board from
