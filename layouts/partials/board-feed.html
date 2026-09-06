@@ -13,13 +13,18 @@
       limit  optional; show at most this many
 
   Entry fields, all optional, rendered when present:
-      date     ISO timestamp or "YYYY-MM-DD"
+      date     ISO timestamp or "YYYY-MM-DD"; always the sort key, even
+               when starts/expires replace it in the displayed meta line
       title | name          the line in strong
       kind                  filter key; shown in the kicker
       org | source | school the kicker after the date
       text | message        body, plain text
       url                   external link
       expires  "YYYY-MM-DD"; an item past it is not rendered
+      starts   "YYYY-MM-DD"; only meaningful alongside expires — together
+               they render as a window ("Mar 30 – Apr 5") in place of the
+               posted date, and the "closes …" span is dropped since the
+               window already shows the end date
 
   Every text field is escaped. Nothing in these files is trusted markup.
 */ -}}
@@ -45,12 +50,17 @@
 <div class="wf-panel wf-scanlines wf-ann__feed">
   <ul class="wf-ann__list">
   {{- range $keep }}
+    {{- $window := and .starts .expires }}
     <li class="wf-ann__item">
       <p class="wf-kicker wf-ann__meta">
+        {{- if $window }}
+        <span>{{ dateFormat "Jan 2" (time.AsTime (printf "%sT12:00:00Z" .starts)) }} – {{ dateFormat "Jan 2" (time.AsTime (printf "%sT12:00:00Z" .expires)) }}</span>
+        {{- else }}
         {{- with .date }}<time datetime="{{ . }}">{{ dateFormat "Mon Jan 2" (time.AsTime .) }}</time>{{ end }}
+        {{- end }}
         {{- if and .kind (not $kind) }}<span>· {{ .kind }}</span>{{ end }}
         {{- with or .org .source .school }}<span>· {{ . }}</span>{{ end }}
-        {{- with .expires }}<span>· closes {{ dateFormat "Jan 2" (time.AsTime (printf "%sT12:00:00Z" .)) }}</span>{{ end }}
+        {{- if not $window }}{{ with .expires }}<span>· closes {{ dateFormat "Jan 2" (time.AsTime (printf "%sT12:00:00Z" .)) }}</span>{{ end }}{{ end }}
         {{- with .url }}<a class="wf-ann__link" href="{{ . }}" rel="external">Open →</a>{{ end }}
       </p>
       {{- with or .title .name }}<p class="wf-ann__text"><strong>{{ . }}</strong></p>{{ end }}
