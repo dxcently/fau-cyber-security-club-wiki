@@ -15,6 +15,10 @@ must unpublish the item on the next run. The hand-edited data/postings.toml
 is a separate file this script never writes to; the two are merged only at
 render time by the board-feed partial.
 
+Expiry defaults to the message timestamp + 30 days. A poster can override it
+with a `deadline: YYYY-MM-DD` line anywhere in the message; a missing or
+malformed one falls back to the default silently.
+
 Meant to run from the same dedicated checkout as fetch-announcements.py: it
 commits and pushes, and rebases onto main first so a concurrent push does
 not wedge it.
@@ -32,6 +36,11 @@ BRIEFCASE      = "\U0001F4BC"  # 💼
 GRADUATION_CAP = "\U0001F393"  # 🎓
 
 LINK_RE = re.compile(r"https?://\S+")
+
+# Author opt-in: a `deadline: YYYY-MM-DD` line, anywhere in the raw message,
+# overrides the default +30d expiry. Tolerant of markdown emphasis around the
+# keyword (`**deadline:**`) since this matches before clean() strips it.
+DEADLINE_RE = re.compile(r"(?i)[*_]{0,2}deadline[*_]{0,2}:[*_]{0,2}\s*(\d{4}-\d{2}-\d{2})")
 
 def _load_sibling(name):
     """Import a hyphenated sibling script under scripts/ without copying it.
@@ -67,9 +76,25 @@ def first_link(raw):
     m = LINK_RE.search(raw)
     return m.group(0) if m else None
 
-def expires_for(timestamp):
-    """Message timestamp + 30 days, formatted YYYY-MM-DD."""
-    return (datetime.fromisoformat(timestamp) + timedelta(days=30)).strftime("%Y-%m-%d")
+def author_deadline(raw):
+    """The date from a `deadline: YYYY-MM-DD` line in the raw message, or None.
+
+    A malformed or non-ISO date (or no deadline line at all) returns None
+    silently — these are messages typed by humans in a chat client, so a
+    bad deadline must never abort the sync.
+    """
+    m = DEADLINE_RE.search(raw)
+    if not m:
+        return None
+    try:
+        datetime.strptime(m.group(1), "%Y-%m-%d")
+    except ValueError:
+        return None
+    return m.group(1)
+
+def expires_for(timestamp, raw=""):
+    """Author's `deadline:` date if the message set one, else timestamp + 30 days."""
+    return author_deadline(raw) or (datetime.fromisoformat(timestamp) + timedelta(days=30)).strftime("%Y-%m-%d")
 
 def build_item(message, guild, channel):
     """Build one data/discord-postings.json entry from a fetched message, or None to skip it."""
@@ -83,7 +108,7 @@ def build_item(message, guild, channel):
         "kind":    kind,
         "text":    clean(raw),
         "url":     url,
-        "expires": expires_for(message["timestamp"]),
+        "expires": expires_for(message["timestamp"], raw),
     }
 
 def main():
