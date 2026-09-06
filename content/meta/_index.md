@@ -11,6 +11,8 @@ page, fix something, or see what is still unfinished, it starts here.
 
 - [Authoring](/meta/authoring/) — how to write and submit a page, the
   shortcode reference, and how to make deeper changes to the site config.
+- [Discord Sync](/meta/discord-sync/) — how the bot moves posts from
+  Discord onto the board, for officers running #announcements and #jobs.
 - [Logo & Brand](/meta/brand/) — the club owl mark in both forms, with
   downloads and usage rules.
 - [TODO](/meta/todo/) — the running list of what has not been built yet.
