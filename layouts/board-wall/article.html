@@ -50,7 +50,7 @@
 
   <section class="wf-ann" aria-labelledby="wf-board-jobs">
     <h2 id="wf-board-jobs">{{ with site.GetPage "/board/postings" }}<a href="{{ .RelPermalink }}">Jobs &amp; internships</a>{{ end }} <span class="wf-kicker">newest five</span></h2>
-    {{ partial "board-feed.html" (dict "data" "postings" "limit" 5) }}
+    {{ partial "board-feed.html" (dict "data" "postings,discord-postings" "limit" 5) }}
   </section>
 
   <section class="wf-ann" aria-labelledby="wf-board-cyber">
