@@ -24,6 +24,14 @@ rides the board until it ages out of the channel or the 50-item cap. A
 but — unlike a missing line — it prints a warning, since that is a
 poster's typo the sync should surface rather than silently swallow.
 
+When DISCORD_OFFICER_CHANNEL_ID is set, that same warning is also posted to
+an officer channel — see build_items() and notify_officer_channel() — so
+the typo gets found without an officer reading build logs. Dedup relies on
+Discord's own message history instead of a state file: the sync reruns
+from scratch every five minutes, so before posting, the officer channel's
+own recent messages are checked for one already naming the offending
+message id.
+
 The card's "Open ->" link is picked in order: an `apply:` line's URL, if
 the author set one; else the first link in the message that isn't a known
 personal-profile URL (see PROFILE_LINK_RES); else the first link outright;
@@ -272,8 +280,13 @@ def deadline_fields(raw, ref):
             return {"expires": expires.isoformat()}, None
     return {}, text
 
-def build_item(message, guild, channel):
-    """Build one data/discord-postings.json entry from a fetched message, or None to skip it."""
+def build_item(message, guild, channel, warnings=None):
+    """Build one data/discord-postings.json entry from a fetched message, or None to skip it.
+
+    When `warnings` is given, an unparseable `deadline:` line also appends
+    (message_id, author_id, bad_text) to it, for notify_officer_channel() —
+    on top of the stderr print below, which always happens regardless.
+    """
     kind = classify(message)
     if kind is None:
         return None
@@ -283,6 +296,8 @@ def build_item(message, guild, channel):
     fields, bad = deadline_fields(raw, datetime.fromisoformat(message["timestamp"]))
     if bad is not None:
         print(f"deadline unparseable in message {message.get('id')}: {bad!r}", file=sys.stderr)
+        if warnings is not None:
+            warnings.append((message["id"], message["author"]["id"], bad))
     return {
         "date": message["timestamp"],
         "kind": kind,
@@ -291,27 +306,86 @@ def build_item(message, guild, channel):
         **fields,
     }
 
+def format_warning(guild, jobs_channel, message_id, author_id, bad_text):
+    """The plain-text officer-channel warning body for one unparseable `deadline:` line."""
+    link = f"https://discord.com/channels/{guild}/{jobs_channel}/{message_id}"
+    return (
+        f"⚠️ Couldn't read the deadline on {link} by <@{author_id}>\n"
+        f"It says: `{bad_text}`\n"
+        "Write it as `deadline: 2026-10-05` (or a range: `deadline: 03/30/2026 - 04/05/2026`)"
+    )
+
+def notify_officer_channel(warnings, guild, jobs_channel, officer_channel, api):
+    """Best-effort: POST one officer-channel warning per unparseable `deadline:` line.
+
+    Dedup has no state file: the sync rebuilds from scratch every five minutes, so
+    instead this fetches the officer channel's own last SCAN messages, keeps the ones
+    authored by the bot itself (its own id from GET /users/@me), and skips any warning
+    whose jobs-message id already appears in one of those. A dedup lookup or a post
+    failure (403, rate limit, network error, malformed response) is caught and printed
+    to stderr as one line — never raised, since a Discord hiccup here must never stop
+    the board from publishing.
+    """
+    if not warnings:
+        return
+    try:
+        bot_id = api("/users/@me")["id"]
+        history = api(f"/channels/{officer_channel}/messages?limit={SCAN}")
+    except Exception as e:
+        print(f"officer channel: could not check warning history: {e}", file=sys.stderr)
+        return
+    already_posted = [m.get("content", "") for m in history
+                       if m.get("author", {}).get("id") == bot_id]
+    for message_id, author_id, bad_text in warnings:
+        if any(message_id in content for content in already_posted):
+            continue
+        body = format_warning(guild, jobs_channel, message_id, author_id, bad_text)
+        payload = json.dumps({
+            "content": body,
+            "allowed_mentions": {"parse": [], "users": [author_id]},
+        }).encode()
+        try:
+            api(f"/channels/{officer_channel}/messages", payload)
+        except Exception as e:
+            print(f"officer channel: could not post warning for {message_id}: {e}", file=sys.stderr)
+
+def build_items(jobs_channel, officer_channel, api):
+    """Fetch #jobs, build the postings list, and (best-effort) flag bad deadlines.
+
+    `api` is injected so tests can stub Discord out entirely. `officer_channel` may be
+    None or empty — meaning DISCORD_OFFICER_CHANNEL_ID is unset — in which case no
+    officer-channel call is made at all, and behaviour is exactly what it was before
+    that feature existed.
+    """
+    guild = api(f"/channels/{jobs_channel}")["guild_id"]
+    messages = api(f"/channels/{jobs_channel}/messages?limit={SCAN}")
+    warnings = []
+    items = [i for i in (build_item(m, guild, jobs_channel, warnings) for m in messages) if i]
+    items.sort(key=lambda i: i["date"], reverse=True)
+    del items[WANT:]
+    if officer_channel:
+        notify_officer_channel(warnings, guild, jobs_channel, officer_channel, api)
+    return items
+
 def main():
-    token   = os.environ.get("DISCORD_BOT_TOKEN")
-    channel = os.environ.get("DISCORD_JOBS_CHANNEL_ID")
+    token           = os.environ.get("DISCORD_BOT_TOKEN")
+    channel         = os.environ.get("DISCORD_JOBS_CHANNEL_ID")
+    officer_channel = os.environ.get("DISCORD_OFFICER_CHANNEL_ID")
     if not (token and channel):
         sys.exit("DISCORD_BOT_TOKEN and DISCORD_JOBS_CHANNEL_ID must be set")
 
-    def api(path):
-        req = urllib.request.Request(API + path, headers={
+    def api(path, data=None):
+        req = urllib.request.Request(API + path, data=data, headers={
             "Authorization": f"Bot {token}",
             # Discord's edge 403s the default Python-urllib UA; their API wants a
             # descriptive one.
             "User-Agent": "fau-csc-postings (+https://fau-cyber-wiki-test.necoconeco.net, 1.0)",
+            **({"Content-Type": "application/json"} if data else {}),
         })
         with urllib.request.urlopen(req, timeout=20) as r:
             return json.load(r)
 
-    guild = api(f"/channels/{channel}")["guild_id"]
-    messages = api(f"/channels/{channel}/messages?limit={SCAN}")
-    items = [i for i in (build_item(m, guild, channel) for m in messages) if i]
-    items.sort(key=lambda i: i["date"], reverse=True)
-    del items[WANT:]
+    items = build_items(channel, officer_channel, api)
 
     new = json.dumps(items, indent=2, ensure_ascii=False) + "\n"
     old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
