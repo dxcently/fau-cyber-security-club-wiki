@@ -1,0 +1,40 @@
+# CI gate for the two Discord/RSS sync scripts (scripts/fetch-*.py).
+#
+# These scripts commit and push on their own, using DISCORD_BOT_TOKEN and
+# DISCORD_CHANNEL_ID that only exist on the deploy box. This job never touches
+# either secret and never reaches Discord or a real RSS feed: their
+# network/git side effects sit behind `if __name__ == "__main__":`, so
+# importing them for the unit tests only defines functions.
+#
+# Two gates:
+#   - byte-compile both scripts, so a syntax-breaking edit fails the PR.
+#   - unit tests for the pure text-handling helpers (clean() in
+#     fetch-announcements.py, parse_feed() in fetch-cyber-news.py) — the part
+#     that breaks silently, since a bad regex still "runs."
+name: scripts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the wiki
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Byte-compile the sync scripts
+        run: python -m py_compile scripts/fetch-announcements.py scripts/fetch-cyber-news.py
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
