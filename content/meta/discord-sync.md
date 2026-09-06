@@ -32,17 +32,23 @@ Remove the reaction later and the post drops off the board on the next sync.
 ## Setting a deadline
 
 A closing date is optional. If you want one, add one line anywhere in the
-message, in exactly this format:
+message, starting with the word `deadline` and a colon. The bot accepts a
+plain date, a written-out date, or a range:
 
 ```
 deadline: 2026-10-15
+deadline: October 15, 2026
+deadline: 03/30/2026 - 04/05/2026
 ```
 
-This is the only format the bot understands: the word `deadline`, a colon,
-then the date as `YYYY-MM-DD`. There is no other accepted wording — not
-"closes," not "due," not a written-out date like "Oct 15" — and a line that
-does not match this exactly is ignored. Leave the line out entirely and the
-posting stays up for 30 days from the day you posted it.
+The word must be `deadline` — not "closes," not "due." Numeric dates like
+`10/15/2026` are read month first, American style. A range shows on the
+board as a window ("Mar 30 – Apr 5") instead of a posted date.
+
+Leave the line out entirely and the posting has no closing date. It stays
+on the board until newer postings push it off, not for a fixed number of
+days. Type a `deadline:` line the bot can't read and the posting behaves
+the same way — no closing date — so get the date right if you want one.
 
 ## Fixing a mistake
 

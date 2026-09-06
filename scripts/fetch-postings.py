@@ -15,9 +15,14 @@ must unpublish the item on the next run. The hand-edited data/postings.toml
 is a separate file this script never writes to; the two are merged only at
 render time by the board-feed partial.
 
-Expiry defaults to the message timestamp + 30 days. A poster can override it
-with a `deadline: YYYY-MM-DD` line anywhere in the message; a missing or
-malformed one falls back to the default silently.
+A posting has no expiry unless its author sets one: a `deadline:` line
+anywhere in the message, followed by a date (or a date range) in one of a
+handful of formats — see DATE_FORMATS_WITH_YEAR and DATE_FORMATS_NO_YEAR
+below. No `deadline:` line means no `expires` key at all, and the item
+rides the board until it ages out of the channel or the 50-item cap. A
+`deadline:` line that is present but unparseable also omits `expires`,
+but — unlike a missing line — it prints a warning, since that is a
+poster's typo the sync should surface rather than silently swallow.
 
 Meant to run from the same dedicated checkout as fetch-announcements.py: it
 commits and pushes, and rebases onto main first so a concurrent push does
@@ -25,7 +30,7 @@ not wedge it.
 """
 import importlib.util
 import json, os, re, subprocess, sys, urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime
 
 API  = "https://discord.com/api/v10"
 WANT = 50    # postings to publish
@@ -37,10 +42,42 @@ GRADUATION_CAP = "\U0001F393"  # 🎓
 
 LINK_RE = re.compile(r"https?://\S+")
 
-# Author opt-in: a `deadline: YYYY-MM-DD` line, anywhere in the raw message,
-# overrides the default +30d expiry. Tolerant of markdown emphasis around the
-# keyword (`**deadline:**`) since this matches before clean() strips it.
-DEADLINE_RE = re.compile(r"(?i)[*_]{0,2}deadline[*_]{0,2}:[*_]{0,2}\s*(\d{4}-\d{2}-\d{2})")
+# Author opt-in: a `deadline:` line, anywhere in the raw message, followed by
+# a date or a date range. Tolerant of markdown emphasis around the keyword
+# (`**deadline:**`) since this matches before clean() strips it. Captures the
+# rest of the line — `.` does not span newlines without re.DOTALL, so this
+# never reaches into the message body that follows.
+DEADLINE_LINE_RE = re.compile(r"(?i)[*_]{0,2}deadline[*_]{0,2}:[*_]{0,2}\s*(.+)")
+
+# A bare hyphen also separates the month/day/year of a numeric date
+# (10-5-2026), so only a hyphen with space on both sides is treated as a
+# range separator. En and em dashes never appear inside a single date, so
+# they split a range even without surrounding space.
+RANGE_SPLIT_RE = re.compile(r"(?i)\s+-\s+|–|—|\s+to\s+")
+
+ORDINAL_RE = re.compile(r"(?i)\b(\d{1,2})(?:st|nd|rd|th)\b")
+
+# Tried in order; the first one that matches the whole (trimmed) string wins.
+# Numeric formats are US ordering (month first) — this is a Florida club.
+DATE_FORMATS_WITH_YEAR = [
+    "%Y-%m-%d",       # 2026-10-05
+    "%m/%d/%Y",       # 10/05/2026
+    "%m/%d/%y",       # 10/5/26
+    "%m-%d-%Y",       # 10-5-2026
+    "%B %d, %Y",      # October 5, 2026
+    "%B %d %Y",       # October 5 2026
+    "%b %d, %Y",      # Oct 5, 2026
+    "%b %d %Y",       # Oct 5 2026
+    "%d %B %Y",       # 5 October 2026
+    "%d %b %Y",       # 5 Oct 2026
+]
+
+# Month-and-day with no year: resolves to the next occurrence on or after
+# the message's own timestamp, never a past date.
+DATE_FORMATS_NO_YEAR = [
+    "%B %d",          # October 5
+    "%b %d",          # Oct 5
+]
 
 def _load_sibling(name):
     """Import a hyphenated sibling script under scripts/ without copying it.
@@ -76,25 +113,106 @@ def first_link(raw):
     m = LINK_RE.search(raw)
     return m.group(0) if m else None
 
-def author_deadline(raw):
-    """The date from a `deadline: YYYY-MM-DD` line in the raw message, or None.
+def _normalize_date_text(text):
+    """Strip an ordinal suffix (`5th` -> `5`) and collapse whitespace."""
+    return re.sub(r"\s+", " ", ORDINAL_RE.sub(r"\1", text.strip()))
 
-    A malformed or non-ISO date (or no deadline line at all) returns None
-    silently — these are messages typed by humans in a chat client, so a
-    bad deadline must never abort the sync.
-    """
-    m = DEADLINE_RE.search(raw)
-    if not m:
-        return None
+def _try_formats(text, formats):
+    """First successful `strptime` result among `formats`, or None."""
+    for fmt in formats:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return None
+
+def _resolve_year(dt, ref):
+    """Attach the next occurrence of a year-less `dt` on or after `ref` — or None."""
     try:
-        datetime.strptime(m.group(1), "%Y-%m-%d")
+        candidate = dt.replace(year=ref.year)
     except ValueError:
-        return None
-    return m.group(1)
+        return None   # e.g. Feb 29 outside a leap year
+    if candidate.date() < ref.date():
+        try:
+            candidate = candidate.replace(year=ref.year + 1)
+        except ValueError:
+            return None
+    return candidate.date()
 
-def expires_for(timestamp, raw=""):
-    """Author's `deadline:` date if the message set one, else timestamp + 30 days."""
-    return author_deadline(raw) or (datetime.fromisoformat(timestamp) + timedelta(days=30)).strftime("%Y-%m-%d")
+def _parse_single_date(text, ref):
+    """One date, in any accepted format, resolved against `ref` — or None.
+
+    `ref` anchors a year-less month/day to its next occurrence: never a date
+    before `ref` itself.
+    """
+    text = _normalize_date_text(text)
+    dt = _try_formats(text, DATE_FORMATS_WITH_YEAR)
+    if dt:
+        return dt.date()
+    dt = _try_formats(text, DATE_FORMATS_NO_YEAR)
+    return _resolve_year(dt, ref) if dt else None
+
+def _parse_range(start_text, end_text, ref):
+    """A (start, end) date pair from the two sides of a range — or None.
+
+    A year-less side borrows the other side's year rather than resolving
+    independently: "March 30 to April 5, 2026" is one year, not two. Only
+    when both sides omit the year do they fall back to `ref`, with the end
+    resolved forward from the (now dated) start so the range can't invert.
+    """
+    start_text, end_text = _normalize_date_text(start_text), _normalize_date_text(end_text)
+    start_dt = _try_formats(start_text, DATE_FORMATS_WITH_YEAR)
+    end_dt = _try_formats(end_text, DATE_FORMATS_WITH_YEAR)
+    if start_dt and end_dt:
+        return start_dt.date(), end_dt.date()
+    if start_dt and not end_dt:
+        end_nd = _try_formats(end_text, DATE_FORMATS_NO_YEAR)
+        end = _resolve_year(end_nd, start_dt) if end_nd else None
+        return (start_dt.date(), end) if end else None
+    if end_dt and not start_dt:
+        start_nd = _try_formats(start_text, DATE_FORMATS_NO_YEAR)
+        if not start_nd:
+            return None
+        try:
+            start = start_nd.replace(year=end_dt.year).date()
+        except ValueError:
+            return None
+        return start, end_dt.date()
+    start_nd = _try_formats(start_text, DATE_FORMATS_NO_YEAR)
+    start = _resolve_year(start_nd, ref) if start_nd else None
+    if not start:
+        return None
+    end_nd = _try_formats(end_text, DATE_FORMATS_NO_YEAR)
+    end = _resolve_year(end_nd, datetime.combine(start, datetime.min.time())) if end_nd else None
+    return (start, end) if end else None
+
+def deadline_fields(raw, ref):
+    """Fields from a message's `deadline:` line, and the bad text if it failed to parse.
+
+    Returns (fields, bad_text):
+      - no `deadline:` line at all:            ({}, None) — nothing to warn about
+      - line present, one date parses:         ({"expires": "YYYY-MM-DD"}, None)
+      - line present, a range parses:          ({"starts": ..., "expires": ...}, None)
+      - line present, nothing usable parses:   ({}, "<the text after the keyword>")
+
+    `ref` is the message's own timestamp (a datetime), used to resolve a
+    year-less date. Never raises: a human typed this in a chat client.
+    """
+    m = DEADLINE_LINE_RE.search(raw)
+    if not m:
+        return {}, None
+    text = m.group(1).strip().rstrip("*_.,; \t")
+    parts = RANGE_SPLIT_RE.split(text, maxsplit=1)
+    if len(parts) == 2:
+        result = _parse_range(parts[0], parts[1], ref)
+        if result:
+            starts, expires = result
+            return {"starts": starts.isoformat(), "expires": expires.isoformat()}, None
+    else:
+        expires = _parse_single_date(text, ref)
+        if expires:
+            return {"expires": expires.isoformat()}, None
+    return {}, text
 
 def build_item(message, guild, channel):
     """Build one data/discord-postings.json entry from a fetched message, or None to skip it."""
@@ -103,12 +221,15 @@ def build_item(message, guild, channel):
         return None
     raw = message.get("content", "")
     url = first_link(raw) or f"https://discord.com/channels/{guild}/{channel}/{message['id']}"
+    fields, bad = deadline_fields(raw, datetime.fromisoformat(message["timestamp"]))
+    if bad is not None:
+        print(f"deadline unparseable in message {message.get('id')}: {bad!r}", file=sys.stderr)
     return {
-        "date":    message["timestamp"],
-        "kind":    kind,
-        "text":    clean(raw),
-        "url":     url,
-        "expires": expires_for(message["timestamp"], raw),
+        "date": message["timestamp"],
+        "kind": kind,
+        "text": clean(raw),
+        "url":  url,
+        **fields,
     }
 
 def main():

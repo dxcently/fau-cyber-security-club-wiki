@@ -151,9 +151,12 @@ their pure text-handling helpers, with no Discord token and no live feed.
 
 `fetch-postings.py` classifies a `#jobs` message by its reactions (💼 → job,
 🎓 → internship; both or neither reaction means it is not published) and
-sets `expires` from a `deadline: YYYY-MM-DD` line in the raw message body,
-falling back to the post date + 30 days when that line is missing or does
-not parse. `data/postings.toml` is a separate, hand-edited file neither
+sets `expires` from a `deadline:` line in the raw message body — several
+date formats and a `start - end` range are accepted, see the module
+docstring — with no `deadline:` line leaving the posting with no expiry at
+all. A `deadline:` line present but unparseable also leaves it with no
+expiry, but prints a warning to stderr, since that's a poster's typo worth
+surfacing. `data/postings.toml` is a separate, hand-edited file neither
 script writes to; `layouts/partials/board-feed.html` merges it with
 `discord-postings.json` at render time, so both feed the same board
 sections. See [`content/meta/discord-sync.md`](content/meta/discord-sync.md)
