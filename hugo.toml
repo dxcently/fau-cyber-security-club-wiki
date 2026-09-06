@@ -1,5 +1,5 @@
 # TODO: placeholder — set the real baseURL before deploying
-baseURL = 'https://example.org/'
+baseURL = 'https://csc.fau.edu/'
 languageCode = 'en-us'
 title = 'FAU Cybersecurity Club'
 theme = 'relearn'
