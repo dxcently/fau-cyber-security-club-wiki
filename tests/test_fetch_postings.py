@@ -2,11 +2,12 @@ import unittest
 
 from loadscript import load
 
-fetch_postings = load("fetch-postings.py")
-classify    = fetch_postings.classify
-first_link  = fetch_postings.first_link
-expires_for = fetch_postings.expires_for
-build_item  = fetch_postings.build_item
+fetch_postings  = load("fetch-postings.py")
+classify        = fetch_postings.classify
+first_link      = fetch_postings.first_link
+expires_for     = fetch_postings.expires_for
+author_deadline = fetch_postings.author_deadline
+build_item      = fetch_postings.build_item
 
 GUILD   = "555000111222333444"
 CHANNEL = "666000111222333444"
@@ -94,6 +95,44 @@ class TestExpiresFor(unittest.TestCase):
 
     def test_crosses_month_boundary(self):
         self.assertEqual(expires_for("2026-01-15T00:00:00.000000+00:00"), "2026-02-14")
+
+    def test_author_deadline_overrides_default(self):
+        raw = "Apply soon.\ndeadline: 2026-09-05"
+        self.assertEqual(expires_for("2026-08-01T15:04:23.512000+00:00", raw), "2026-09-05")
+
+    def test_no_deadline_line_falls_back_to_default(self):
+        raw = "No deadline mentioned here."
+        self.assertEqual(expires_for("2026-08-01T15:04:23.512000+00:00", raw), "2026-08-31")
+
+
+class TestAuthorDeadline(unittest.TestCase):
+    def test_explicit_deadline_is_used(self):
+        self.assertEqual(author_deadline("deadline: 2026-09-05"), "2026-09-05")
+
+    def test_no_deadline_line_returns_none(self):
+        self.assertIsNone(author_deadline("Apply whenever, no rush."))
+
+    def test_malformed_date_falls_back(self):
+        self.assertIsNone(author_deadline("deadline: 09-05-2026"))
+
+    def test_non_iso_format_falls_back(self):
+        self.assertIsNone(author_deadline("deadline: Oct 5"))
+
+    def test_invalid_calendar_date_falls_back(self):
+        self.assertIsNone(author_deadline("deadline: 2026-13-45"))
+
+    def test_bold_markdown_keyword_still_matches(self):
+        self.assertEqual(author_deadline("**deadline:** 2026-10-05"), "2026-10-05")
+
+    def test_case_insensitive_keyword(self):
+        self.assertEqual(author_deadline("DEADLINE: 2026-09-05"), "2026-09-05")
+
+    def test_deadline_line_anywhere_in_body(self):
+        raw = "Hey everyone, cool internship!\n\ndeadline: 2026-09-05\n\nApply on our site."
+        self.assertEqual(author_deadline(raw), "2026-09-05")
+
+    def test_synonym_keyword_not_accepted(self):
+        self.assertIsNone(author_deadline("closes: 2026-09-05"))
 
 
 class TestBuildItem(unittest.TestCase):
