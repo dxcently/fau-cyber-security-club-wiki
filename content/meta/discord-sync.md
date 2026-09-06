@@ -50,6 +50,9 @@ on the board until newer postings push it off, not for a fixed number of
 days. Type a `deadline:` line the bot can't read and the posting behaves
 the same way — no closing date — so get the date right if you want one.
 
+A deadline the bot can't read also gets flagged in **#officer-chat**, with a
+link straight to the post, so someone catches the typo.
+
 ## Pointing "Open ->" at the right link
 
 Every link in your post is clickable on the board — you don't need to do

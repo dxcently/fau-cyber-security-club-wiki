@@ -146,8 +146,14 @@ their pure text-handling helpers, with no Discord token and no live feed.
 | Script | Writes | Env vars |
 | --- | --- | --- |
 | `fetch-announcements.py` | `data/announcements.json` | `DISCORD_BOT_TOKEN`, `DISCORD_CHANNEL_ID` |
-| `fetch-postings.py` | `data/discord-postings.json` | `DISCORD_BOT_TOKEN`, `DISCORD_JOBS_CHANNEL_ID` |
+| `fetch-postings.py` | `data/discord-postings.json` | `DISCORD_BOT_TOKEN`, `DISCORD_JOBS_CHANNEL_ID`, `DISCORD_OFFICER_CHANNEL_ID` (optional) |
 | `fetch-cyber-news.py` | `data/cyber-news.json` | none — reads public RSS feeds |
+
+`DISCORD_OFFICER_CHANNEL_ID` is optional: when set, `fetch-postings.py` also
+posts a warning to that channel for each unparseable `deadline:` line,
+alongside the stderr line it always prints — deduped against that channel's
+own recent messages instead of a state file, since the sync keeps no state
+between runs.
 
 `fetch-postings.py` classifies a `#jobs` message by its reactions (💼 → job,
 🎓 → internship; both or neither reaction means it is not published) and
